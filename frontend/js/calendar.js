@@ -213,6 +213,22 @@ function initializeCalendar() {
             adjustWeekendDisplay(events);
         },
         
+        // 날짜 범위 변경 시 (네비게이션 포함) 주별/월별 계획 업데이트
+        datesSet: function(info) {
+            console.log('=== DATES CHANGED ===');
+            console.log('Date range:', info.start, 'to', info.end);
+            console.log('View type:', info.view.type);
+            
+            // 현재 보이는 날짜 범위의 중간 날짜를 기준으로 주별/월별 계획 업데이트
+            const startDate = new Date(info.start);
+            const endDate = new Date(info.end);
+            const middleDate = new Date(startDate.getTime() + (endDate.getTime() - startDate.getTime()) / 2);
+            const middleDateStr = middleDate.toISOString().split('T')[0];
+            
+            console.log('Updating weekly/monthly plans for middle date:', middleDateStr);
+            loadWeeklyMonthlyPlans(middleDateStr);
+        },
+        
         // 뷰 변경 시 이벤트 새로고침
         viewDidMount: function(info) {
             console.log('=== VIEW CHANGED ===');
