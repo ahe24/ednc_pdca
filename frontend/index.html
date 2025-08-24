@@ -142,7 +142,17 @@
                         </div>
 
                         <div id="timeSection">
-                            <h6 class="text-muted mb-2">📅 계획 시간</h6>
+                            <!-- 시간 프리셋 버튼 -->
+                            <div class="mb-3 d-flex align-items-center gap-2">
+                                <label class="form-label mb-0">계획 시간</label>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="시간 프리셋">
+                                    <button type="button" class="btn btn-outline-primary" id="morningTimeBtn" 
+                                            title="오전: 9:00-11:30">오전</button>
+                                    <button type="button" class="btn btn-outline-primary" id="afternoonTimeBtn" 
+                                            title="오후: 12:30-17:00">오후</button>
+                                </div>
+                            </div>
+                            
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="startTime" class="form-label">시작 시간</label>

@@ -157,6 +157,24 @@ function setupEventListeners() {
         planStatus.addEventListener('change', toggleActualTimeSection);
     }
     
+    // 시간 프리셋 버튼
+    const morningTimeBtn = document.getElementById('morningTimeBtn');
+    const afternoonTimeBtn = document.getElementById('afternoonTimeBtn');
+    
+    if (morningTimeBtn) {
+        morningTimeBtn.addEventListener('click', function() {
+            document.getElementById('startTime').value = '09:00';
+            document.getElementById('endTime').value = '11:30';
+        });
+    }
+    
+    if (afternoonTimeBtn) {
+        afternoonTimeBtn.addEventListener('click', function() {
+            document.getElementById('startTime').value = '12:30';
+            document.getElementById('endTime').value = '17:00';
+        });
+    }
+    
     // 모달 닫힐 때 시간 섹션 복원
     const planModal = document.getElementById('planModal');
     if (planModal) {
@@ -181,7 +199,7 @@ function setupEventListeners() {
 }
 
 // 계획 모달 열기
-async function openPlanModal(planId = null, selectedDate = null) {
+async function openPlanModal(planId = null, selectedDate = null, timeInfo = null) {
     currentPlanId = planId;
     const modal = new bootstrap.Modal(document.getElementById('planModal'));
     const modalTitle = document.getElementById('planModalTitle');
@@ -216,6 +234,28 @@ async function openPlanModal(planId = null, selectedDate = null) {
             document.getElementById('planDate').value = selectedDate;
             // 날짜가 선택된 경우 일별 계획으로 설정
             document.getElementById('planType').value = 'daily';
+            console.log(`날짜 필드 설정: ${selectedDate}`);
+        }
+        
+        // 시간 정보가 있으면 시간 필드 설정 (week/day 뷰에서)
+        if (timeInfo) {
+            const startTime = `${timeInfo.hour.toString().padStart(2, '0')}:${timeInfo.minute.toString().padStart(2, '0')}`;
+            
+            // 기본 1시간 후를 종료 시간으로 설정
+            const endHour = (timeInfo.hour + 1) % 24;
+            const endTime = `${endHour.toString().padStart(2, '0')}:${timeInfo.minute.toString().padStart(2, '0')}`;
+            
+            console.log(`시간 자동 설정: ${startTime} - ${endTime}`);
+            
+            // 시간 필드 설정 (resetPlanForm 이후에 설정)
+            document.getElementById('startTime').value = startTime;
+            document.getElementById('endTime').value = endTime;
+            
+            // timeInfo가 있으면 날짜도 다시 한번 확실히 설정
+            if (selectedDate) {
+                document.getElementById('planDate').value = selectedDate;
+                console.log(`시간 정보와 함께 날짜 재설정: ${selectedDate}`);
+            }
         }
     }
     

@@ -69,19 +69,66 @@ function initializeCalendar() {
         
         // 날짜 클릭 이벤트 (주별/월별 계획 로드)
         dateClick: function(info) {
-            loadWeeklyMonthlyPlans(info.dateStr);
+            // 날짜 문자열을 안전하게 추출
+            const safeDateStr = info.dateStr || (info.date ? 
+                info.date.toISOString().split('T')[0] : null);
             
-            // 더블클릭 감지를 위한 타이머 설정
-            if (window.dateClickTimer) {
-                clearTimeout(window.dateClickTimer);
-                window.dateClickTimer = null;
-                // 더블클릭 - 일별 계획 생성/편집
-                handleDateDoubleClick(info.dateStr);
-            } else {
-                window.dateClickTimer = setTimeout(() => {
+            if (safeDateStr) {
+                loadWeeklyMonthlyPlans(safeDateStr);
+            }
+            
+            // 클릭한 위치에 이벤트가 있는지 확인
+            const clickedEvents = calendar.getEvents().filter(event => {
+                const eventDate = event.start.toISOString().split('T')[0];
+                return eventDate === safeDateStr;
+            });
+            
+            // 클릭한 시간 정보 추출 (week/day 뷰에서만 사용)
+            const clickedDateTime = info.date; // FullCalendar Date 객체
+            const clickedTime = clickedDateTime ? {
+                hour: clickedDateTime.getHours(),
+                minute: clickedDateTime.getMinutes()
+            } : null;
+            
+            console.log('클릭 정보:', {
+                originalDateStr: info.dateStr,
+                safeDateStr: safeDateStr,
+                time: clickedTime,
+                view: calendar.view.type,
+                hasEvents: clickedEvents.length > 0,
+                clickedDateTime: clickedDateTime
+            });
+            
+            // 이벤트가 있는 날짜를 클릭했지만 이벤트 영역을 정확히 클릭하지 않은 경우
+            // (즉, 빈 공간을 클릭한 경우) 새 계획 생성
+            if (clickedEvents.length > 0) {
+                console.log('클릭한 날짜에 이벤트가 있습니다. 빈 공간 클릭 시에만 새 계획을 생성합니다.');
+                // 더블클릭 감지를 위한 타이머 설정 (빈 공간 클릭 시에만 새 계획 생성)
+                if (window.dateClickTimer) {
+                    clearTimeout(window.dateClickTimer);
                     window.dateClickTimer = null;
-                    // 단일 클릭은 이미 위에서 처리됨
-                }, 300);
+                    // 더블클릭 - 새 일별 계획 생성 (기존 계획 무시)
+                    console.log('빈 공간 더블클릭 - 새 계획 생성');
+                    handleDateDoubleClick(safeDateStr, true, clickedTime);
+                } else {
+                    window.dateClickTimer = setTimeout(() => {
+                        window.dateClickTimer = null;
+                        // 단일 클릭은 아무것도 하지 않음
+                    }, 300);
+                }
+            } else {
+                // 이벤트가 없는 날짜를 클릭한 경우
+                if (window.dateClickTimer) {
+                    clearTimeout(window.dateClickTimer);
+                    window.dateClickTimer = null;
+                    // 더블클릭 - 일별 계획 생성/편집
+                    handleDateDoubleClick(safeDateStr, false, clickedTime);
+                } else {
+                    window.dateClickTimer = setTimeout(() => {
+                        window.dateClickTimer = null;
+                        // 단일 클릭은 이미 위에서 처리됨
+                    }, 300);
+                }
             }
         },
         
@@ -1071,10 +1118,18 @@ function adjustWeekendDisplay(events) {
     console.log('=== Weekend Display Adjustment Complete ===');
 }
 
+
 // 날짜 더블클릭 처리 (일별 계획 생성/편집)
-async function handleDateDoubleClick(dateStr) {
+async function handleDateDoubleClick(dateStr, forceNew = false, timeInfo = null) {
     try {
-        console.log(`날짜 더블클릭: ${dateStr}`);
+        console.log(`날짜 더블클릭: ${dateStr}, forceNew: ${forceNew}, timeInfo:`, timeInfo);
+        
+        if (forceNew) {
+            // 강제로 새 계획 생성 (빈 공간 클릭 시)
+            console.log(`새 일별 계획 생성 (강제): ${dateStr}`);
+            openPlanModal(null, dateStr, timeInfo);
+            return;
+        }
         
         // 해당 날짜에 기존 일별 계획이 있는지 확인
         const result = await API.plans.getAll({
@@ -1090,7 +1145,7 @@ async function handleDateDoubleClick(dateStr) {
         } else {
             // 기존 계획이 없으면 새 일별 계획 생성
             console.log(`새 일별 계획 생성: ${dateStr}`);
-            openPlanModal(null, dateStr);
+            openPlanModal(null, dateStr, timeInfo);
         }
     } catch (error) {
         console.error('날짜 더블클릭 처리 실패:', error);
