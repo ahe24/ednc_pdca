@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ED&C PDCA - 대시보드</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css" rel="stylesheet">
+    <link href="css/style.css?v=10" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">ED&C PDCA</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-view="my">내 캘린더</a>
+                    </li>
+                    <li class="nav-item d-none" id="teamNavItem">
+                        <a class="nav-link" href="/team-calendar.html">팀 캘린더</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/weekly-report.html">주간 보고서</a>
+                    </li>
+                    <li class="nav-item d-none" id="allNavItem">
+                        <a class="nav-link" href="#" data-view="all">전체 캘린더</a>
+                    </li>
+                </ul>
+                
+                <!-- 검색 폼 -->
+                <form class="d-flex me-3" role="search" onsubmit="return false;">
+                    <div class="position-relative">
+                        <input class="form-control" type="search" id="planSearch" placeholder="일정 검색..." aria-label="Search" style="width: 250px;">
+                        <div id="searchResults" class="search-results-dropdown position-absolute d-none">
+                            <!-- 검색 결과가 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+                </form>
+                
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <span id="userNameDisplay">사용자</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="profileBtn">프로필</a></li>
+                            <li class="d-none" id="adminMenuItem"><a class="dropdown-item" href="/admin.html">관리자</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">로그아웃</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 컨테이너 -->
+    <div class="container-fluid mt-4">
+        <!-- 월별/주별 계획 카드 -->
+        <div class="row mb-3" id="weeklyMonthlyPlansContainer">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0" id="monthlyPlanTitle">월별 계획</h6>
+                        <button class="btn btn-sm btn-outline-primary" id="editMonthlyPlanBtn">편집</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="monthlyPlanContent">
+                            <p class="text-muted">선택한 월의 계획이 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0" id="weeklyPlanTitle">주별 계획</h6>
+                        <button class="btn btn-sm btn-outline-primary" id="editWeeklyPlanBtn">편집</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="weeklyPlanContent">
+                            <p class="text-muted">선택한 주의 계획이 없습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 캘린더 카드 -->
+        <div class="card">
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="hideEmptyWeekends" checked>
+                        <label class="form-check-label" for="hideEmptyWeekends">
+                            빈 주말 자동 숨김
+                        </label>
+                    </div>
+                </div>
+                <div id="calendar"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 계획 편집 모달 -->
+    <div class="modal fade" id="planModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="planModalTitle">새 계획 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="planForm">
+                        <input type="hidden" id="planId">
+                        
+                        <input type="hidden" id="planType" value="daily">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="planDate" class="form-label">날짜</label>
+                                <input type="date" class="form-control" id="planDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="planTitle" class="form-label">제목</label>
+                                <input type="text" class="form-control" id="planTitle">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="planDescription" class="form-label">계획 내용</label>
+                            <textarea class="form-control" id="planDescription" rows="4" placeholder="주요 목표별로 구성하여 입력하세요.&#10;예시 1:&#10;프로젝트 완료:&#10;- 요구사항 검토&#10;- 결과물 제출&#10;&#10;팀 협업:&#10;- 주간 미팅&#10;- 진행상황 공유&#10;&#10;예시 2:&#10;## 개발 업무&#10;- 기능 구현&#10;- 테스트 작성&#10;&#10;## 회의 및 소통&#10;- 팀 스탠드업&#10;- 고객 피드백 수집"></textarea>
+                            <div class="form-text">제목은 "제목:" 또는 "## 제목" 형태로, 하위 항목은 "- 항목" 형태로 입력하세요.</div>
+                        </div>
+
+                        <div id="timeSection">
+                            <h6 class="text-muted mb-2">📅 계획 시간</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="startTime" class="form-label">시작 시간</label>
+                                    <input type="time" class="form-control" id="startTime" value="09:00">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="endTime" class="form-label">종료 시간</label>
+                                    <input type="time" class="form-control" id="endTime" value="17:00">
+                                </div>
+                            </div>
+                            
+                            <div id="actualTimeSection" class="d-none">
+                                <h6 class="text-success mb-2">✅ 실제 시간</h6>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="actualStartTime" class="form-label">실제 시작 시간</label>
+                                        <input type="time" class="form-control" id="actualStartTime">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="actualEndTime" class="form-label">실제 종료 시간</label>
+                                        <input type="time" class="form-control" id="actualEndTime">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="planStatus" class="form-label">상태</label>
+                                    <select class="form-control" id="planStatus">
+                                        <option value="planned">계획됨</option>
+                                        <option value="completed">완료</option>
+                                        <option value="cancelled">취소</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="row">
+                                        <div class="col-4">
+                                            <div class="form-check mt-4">
+                                                <input class="form-check-input" type="checkbox" id="isFieldWork">
+                                                <label class="form-check-label" for="isFieldWork">
+                                                    외근
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-8">
+                                            <label for="location" class="form-label">위치</label>
+                                            <input type="text" class="form-control" id="location" placeholder="외근 시 위치를 입력하세요" disabled>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PDCA 섹션 -->
+                        <div class="mt-4">
+                            <h6>PDCA 기록</h6>
+                            <div class="mb-3">
+                                <label for="doContent" class="form-label">실행 (Do)</label>
+                                <textarea class="form-control" id="doContent" rows="2" placeholder="수행한 작업 내용을 기록하세요"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="checkContent" class="form-label">점검 (Check)</label>
+                                <textarea class="form-control" id="checkContent" rows="2" placeholder="결과 검토 및 문제점을 기록하세요"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="actionContent" class="form-label">조치 (Action)</label>
+                                <textarea class="form-control" id="actionContent" rows="2" placeholder="개선사항 및 다음 계획을 기록하세요"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger d-none" id="deletePlanBtn">삭제</button>
+                    <button type="button" class="btn btn-primary" id="savePlanBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 다중 복사 모달 -->
+    <div class="modal fade" id="multiCopyModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">여러 날짜에 복사</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="copyStartDate" class="form-label">시작 날짜</label>
+                        <input type="date" class="form-control" id="copyStartDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="copyEndDate" class="form-label">종료 날짜</label>
+                        <input type="date" class="form-control" id="copyEndDate">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="copyPdca">
+                        <label class="form-check-label" for="copyPdca">
+                            PDCA 내용도 함께 복사
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="confirmCopyBtn">복사</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 주별/월별 계획 모달 -->
+    <div class="modal fade" id="weeklyMonthlyPlanModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="weeklyMonthlyPlanModalTitle">주별 계획</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="weeklyMonthlyPlanForm">
+                        <input type="hidden" id="weeklyMonthlyPlanId">
+                        <input type="hidden" id="weeklyMonthlyPlanType">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="weeklyMonthlyPlanDate" class="form-label">기준 날짜</label>
+                                <input type="date" class="form-control" id="weeklyMonthlyPlanDate" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="weeklyMonthlyPlanTitle" class="form-label">제목</label>
+                                <input type="text" class="form-control" id="weeklyMonthlyPlanTitle" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="weeklyMonthlyPlanDescription" class="form-label">계획 내용</label>
+                            <textarea class="form-control" id="weeklyMonthlyPlanDescription" rows="6" 
+                                placeholder="목표와 계획을 구체적으로 작성하세요.&#10;&#10;예시:&#10;📋 주요 목표&#10;- 프로젝트 A 완료&#10;- 팀 회의 준비&#10;&#10;🎯 세부 계획&#10;- 월요일: 요구사항 분석&#10;- 화요일: 개발 시작&#10;- 수요일: 테스트 진행&#10;&#10;📊 성과 지표&#10;- 완료율 목표: 80%&#10;- 품질 목표: 버그 0개"></textarea>
+                            <div class="form-text">목표, 계획, 성과지표 등을 포함하여 체계적으로 작성하세요.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="weeklyMonthlyPlanStatus" class="form-label">상태</label>
+                            <select class="form-select" id="weeklyMonthlyPlanStatus">
+                                <option value="planned">계획됨</option>
+                                <option value="in_progress">진행중</option>
+                                <option value="completed">완료</option>
+                                <option value="cancelled">취소됨</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-danger d-none" id="deleteWeeklyMonthlyPlanBtn">삭제</button>
+                    <button type="button" class="btn btn-primary" id="saveWeeklyMonthlyPlanBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로필 모달 -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">프로필 설정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="profileForm">
+                        <div class="mb-3">
+                            <label for="profileUsername" class="form-label text-muted">사용자 ID</label>
+                            <input type="text" class="form-control-plaintext bg-light text-dark border-0 ps-3" id="profileUsername" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileName" class="form-label">이름 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="profileName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="profileEmail" class="form-label">이메일</label>
+                            <input type="email" class="form-control" id="profileEmail">
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="profileTeam" class="form-label text-muted">팀</label>
+                                <input type="text" class="form-control-plaintext bg-light text-dark border-0 ps-3" id="profileTeam" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="profileRole" class="form-label text-muted">역할</label>
+                                <input type="text" class="form-control-plaintext bg-light text-dark border-0 ps-3" id="profileRole" readonly>
+                            </div>
+                        </div>
+                        <hr>
+                        <h5 class="mb-3 fw-bold">비밀번호 변경</h5>
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">현재 비밀번호</label>
+                            <input type="password" class="form-control" id="currentPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">새 비밀번호</label>
+                            <input type="password" class="form-control" id="newPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">새 비밀번호 확인</label>
+                            <input type="password" class="form-control" id="confirmPassword">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveProfileBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="bg-light border-top mt-5 py-4">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-6 mb-3 mb-lg-0">
+                    <h6 class="text-primary mb-2">📋 ED&C PDCA 시스템</h6>
+                    <p class="text-muted small mb-1">효율적인 계획-실행-점검-조치 관리를 위한 통합 플랫폼</p>
+                    <div class="d-flex flex-wrap gap-3 small">
+                        <a href="/" class="text-primary text-decoration-none">🏠 대시보드</a>
+                        <a href="/weekly-report.html" class="text-primary text-decoration-none">📊 주간보고서</a>
+                        <a href="/team-calendar.html" class="text-primary text-decoration-none">👥 팀 캘린더</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <div class="mb-2">
+                        <span class="badge bg-success small">⚡ 시스템 정상</span>
+                        <span class="badge bg-info small ms-1">🔒 보안연결</span>
+                    </div>
+                    <div class="small text-muted">
+                        <div>© 2025 EDMFG • EDA Team • Developed by cs.jo</div>
+                        <div class="mt-1">
+                            <span class="me-3">🌍 Seoul, KR (UTC+9)</span>
+                            <span>v1.0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr class="text-muted my-3">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <small class="text-muted">
+                        💡 <strong>도움말:</strong> 날짜를 더블클릭하여 새 계획을 추가하거나, 기존 일정을 클릭하여 편집할 수 있습니다.
+                    </small>
+                </div>
+                <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                    <small class="text-muted">
+                        ❓ 문의: <a href="mailto:cs.jo@ednc.com" class="text-primary text-decoration-none">cs.jo@ednc.com</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 스크립트 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/locales/ko.global.min.js"></script>
+    <script src="js/auth.js?v=15"></script>
+    <script src="js/api.js?v=15"></script>
+    <script src="js/calendar.js?v=15"></script>
+    <script src="js/search.js?v=15"></script>
+    <script src="js/app.js?v=15"></script>
+</body>
+</html>

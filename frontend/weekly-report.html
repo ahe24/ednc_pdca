@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ED&C PDCA - 주간 보고서</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="css/style.css?v=11" rel="stylesheet">
+    <style>
+        .report-card {
+            border-left: 4px solid #007bff;
+        }
+        .report-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .status-completed { color: #28a745; font-weight: 600; }
+        .status-in-progress { color: #ffc107; font-weight: 600; }
+        .status-pending { color: #6c757d; font-weight: 600; }
+        .status-cancelled { color: #dc3545; font-weight: 600; }
+        .cell-badge {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .time-cell {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+        }
+        .time-planned { 
+            background-color: #e3f2fd; 
+            color: #1565c0; 
+            border-left: 3px solid #2196f3;
+        }
+        .time-actual { 
+            background-color: #e8f5e8; 
+            color: #2e7d32; 
+            border-left: 3px solid #4caf50;
+        }
+        .status-badge {
+            background-color: #f8f9fa;
+            color: #495057;
+            border-left: 3px solid #dee2e6;
+        }
+        .status-badge.completed {
+            background-color: #d4edda;
+            color: #155724;
+            border-left-color: #28a745;
+        }
+        .location-badge {
+            background-color: #fff3cd;
+            color: #856404;
+            border-left: 3px solid #ffc107;
+        }
+        .content-highlight {
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 2px solid #dee2e6;
+        }
+        .print-hide { display: none; }
+        @media print {
+            .no-print { display: none !important; }
+            .print-hide { display: block !important; }
+            .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
+            body { font-size: 12px; }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary no-print">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">ED&C PDCA</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">내 캘린더</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/team-calendar.html">팀 캘린더</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/weekly-report.html">주간 보고서</a>
+                    </li>
+                    <li class="nav-item d-none" id="allNavItem">
+                        <a class="nav-link" href="#" data-view="all">전체 캘린더</a>
+                    </li>
+                </ul>
+                
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <span id="userNameDisplay">사용자</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="profileBtn">프로필</a></li>
+                            <li class="d-none" id="adminMenuItem"><a class="dropdown-item" href="/admin.html">관리자</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">로그아웃</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- 보고서 헤더 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card report-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="no-print me-3">
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="navigateWeek(-1)" title="이전 주">
+                                            ← 이전
+                                        </button>
+                                        <button class="btn btn-outline-primary btn-sm" onclick="goToCurrentWeek()" title="이번 주로">
+                                            이번 주
+                                        </button>
+                                        <button class="btn btn-outline-secondary btn-sm" onclick="navigateWeek(1)" title="다음 주">
+                                            다음 →
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="mb-0">주간 보고서</h4>
+                                    <small class="text-muted" id="reportDateRange">2024년 1월 1일 - 1월 7일</small>
+                                </div>
+                            </div>
+                            <div class="no-print">
+                                <div class="form-check form-switch me-3 d-inline-block">
+                                    <input class="form-check-input" type="checkbox" id="showWeekendToggle" checked>
+                                    <label class="form-check-label" for="showWeekendToggle">주말 포함</label>
+                                </div>
+                                <button class="btn btn-primary btn-sm me-2" onclick="window.print()">
+                                    📄 출력
+                                </button>
+                                <button class="btn btn-outline-secondary btn-sm" onclick="refreshReport()">
+                                    🔄 새로고침
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 이번 달/주 주요 계획 -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">이번 달 주요 계획</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="monthlyMajorPlans">
+                            <p class="text-muted">월별 계획을 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">이번 주 주요 계획</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="weeklyMajorPlans">
+                            <p class="text-muted">주별 계획을 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 이번 주 PDCA 테이블 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">이번 주 PDCA (월-일)</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 report-table" id="thisWeekTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 8%">날짜</th>
+                                        <th style="width: 18%">계획 (Plan)</th>
+                                        <th style="width: 10%">계획시간</th>
+                                        <th style="width: 10%">실제시간</th>
+                                        <th style="width: 18%">실행 (Do)</th>
+                                        <th style="width: 18%">점검 (Check)</th>
+                                        <th style="width: 18%">개선 (Action)</th>
+                                        <th style="width: 6%">상태</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">데이터를 불러오는 중...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 다음 주 주요 계획 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">다음 주 주요 계획</h6>
+                    </div>
+                    <div class="card-body">
+                        <div id="nextWeeklyMajorPlans">
+                            <p class="text-muted">다음 주 주요 계획을 불러오는 중...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 다음 주 계획 테이블 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">다음 주 계획 (월-일)</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 report-table" id="nextWeekTable">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%">날짜</th>
+                                        <th style="width: 25%">계획 제목</th>
+                                        <th style="width: 35%">세부 내용</th>
+                                        <th style="width: 15%">시간</th>
+                                        <th style="width: 15%">작업위치</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="5" class="text-center text-muted py-4">데이터를 불러오는 중...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 프로필 모달 (auth.js에서 재사용) -->
+    <div class="modal fade" id="profileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">프로필 설정</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="profileForm">
+                        <!-- 기본 정보 섹션 -->
+                        <div class="mb-4">
+                            <h6 class="mb-3 fw-bold">기본 정보</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="profileUsername" class="form-label">사용자 ID</label>
+                                    <input type="text" class="form-control bg-light" id="profileUsername" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="profileName" class="form-label">이름 *</label>
+                                    <input type="text" class="form-control" id="profileName" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="profileTeam" class="form-label">팀</label>
+                                    <input type="text" class="form-control bg-light" id="profileTeam" readonly>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="profileRole" class="form-label">역할</label>
+                                    <input type="text" class="form-control bg-light" id="profileRole" readonly>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="profileEmail" class="form-label">이메일</label>
+                                <input type="email" class="form-control" id="profileEmail">
+                            </div>
+                        </div>
+
+                        <!-- 비밀번호 변경 섹션 -->
+                        <div class="mb-3">
+                            <h5 class="mb-3 fw-bold">비밀번호 변경</h5>
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">현재 비밀번호</label>
+                                <input type="password" class="form-control" id="currentPassword">
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">새 비밀번호</label>
+                                <input type="password" class="form-control" id="newPassword">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">새 비밀번호 확인</label>
+                                <input type="password" class="form-control" id="confirmPassword">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveProfileBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 푸터 -->
+    <footer class="bg-light border-top mt-5 py-4">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-6 mb-3 mb-lg-0">
+                    <h6 class="text-primary mb-2">📋 ED&C PDCA 시스템</h6>
+                    <p class="text-muted small mb-1">효율적인 계획-실행-점검-조치 관리를 위한 통합 플랫폼</p>
+                    <div class="d-flex flex-wrap gap-3 small">
+                        <a href="/" class="text-primary text-decoration-none">🏠 대시보드</a>
+                        <a href="/weekly-report.html" class="text-primary text-decoration-none">📊 주간보고서</a>
+                        <a href="/team-calendar.html" class="text-primary text-decoration-none">👥 팀 캘린더</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <div class="mb-2">
+                        <span class="badge bg-success small">⚡ 시스템 정상</span>
+                        <span class="badge bg-info small ms-1">🔒 보안연결</span>
+                    </div>
+                    <div class="small text-muted">
+                        <div>© 2025 EDMFG • EDA Team • Developed by cs.jo</div>
+                        <div class="mt-1">
+                            <span class="me-3">🌍 Seoul, KR (UTC+9)</span>
+                            <span>v1.0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr class="text-muted my-3">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <small class="text-muted">
+                        📊 <strong>주간 보고서:</strong> 이번 주 성과를 정리하고 다음 주 계획을 효율적으로 관리하세요.
+                    </small>
+                </div>
+                <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                    <small class="text-muted">
+                        ❓ 문의: <a href="mailto:cs.jo@ednc.com" class="text-primary text-decoration-none">cs.jo@ednc.com</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@9.1.2/marked.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/weekly-report.js"></script>
+</body>
+</html>

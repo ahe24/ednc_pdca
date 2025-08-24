@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ED&C PDCA - 관리자</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- 네비게이션 바 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand fw-bold" href="/">ED&C PDCA</a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">내 캘린더</a>
+                    </li>
+                    <li class="nav-item d-none" id="teamNavItem">
+                        <a class="nav-link" href="/team-calendar.html">팀 캘린더</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/weekly-report.html">주간 보고서</a>
+                    </li>
+                    <li class="nav-item d-none" id="allNavItem">
+                        <a class="nav-link" href="#" data-view="all">전체 캘린더</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/admin.html">관리자</a>
+                    </li>
+                </ul>
+                
+                <div class="navbar-nav">
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <span id="userNameDisplay">관리자</span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" id="profileBtn">프로필</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">로그아웃</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- 사이드바 -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">관리 메뉴</h5>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        <a href="#" class="list-group-item list-group-item-action active" data-section="teams">
+                            팀 관리
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-section="users">
+                            사용자 관리
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-section="register">
+                            사용자 등록
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action" data-section="stats">
+                            통계
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메인 콘텐츠 -->
+            <div class="col-md-9">
+                <!-- 팀 관리 섹션 -->
+                <div id="teamsSection" class="admin-section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">팀 관리</h5>
+                            <button class="btn btn-primary btn-sm" id="addTeamBtn">새 팀 추가</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>팀 이름</th>
+                                            <th>설명</th>
+                                            <th>멤버 수</th>
+                                            <th>생성일</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="teamsTableBody">
+                                        <!-- Teams will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사용자 관리 섹션 -->
+                <div id="usersSection" class="admin-section d-none">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">사용자 관리</h5>
+                            <button class="btn btn-primary btn-sm" id="addUserBtn">새 사용자 추가</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>사용자 ID</th>
+                                            <th>이름</th>
+                                            <th>이메일</th>
+                                            <th>역할</th>
+                                            <th>팀</th>
+                                            <th>생성일</th>
+                                            <th>작업</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTableBody">
+                                        <!-- Users will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 사용자 등록 섹션 -->
+                <div id="registerSection" class="admin-section d-none">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">사용자 등록</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="registerForm">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="regUsername" class="form-label">사용자 ID *</label>
+                                            <input type="text" class="form-control" id="regUsername" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="regPassword" class="form-label">비밀번호 *</label>
+                                            <input type="password" class="form-control" id="regPassword" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="regName" class="form-label">이름 *</label>
+                                            <input type="text" class="form-control" id="regName" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <label for="regEmail" class="form-label">이메일</label>
+                                            <input type="email" class="form-control" id="regEmail">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="regRole" class="form-label">역할</label>
+                                            <select class="form-select" id="regRole">
+                                                <option value="member">멤버</option>
+                                                <option value="manager">매니저</option>
+                                                <option value="admin">관리자</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="regTeam" class="form-label">팀</label>
+                                            <select class="form-select" id="regTeam">
+                                                <option value="">팀 선택</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">사용자 등록</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 통계 섹션 -->
+                <div id="statsSection" class="admin-section d-none">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">시스템 통계</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <i class="bi bi-people display-4 text-primary mb-2"></i>
+                                            <h4 class="mb-0" id="totalUsers">-</h4>
+                                            <p class="text-muted mb-0">전체 사용자</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <i class="bi bi-diagram-3 display-4 text-success mb-2"></i>
+                                            <h4 class="mb-0" id="totalTeams">-</h4>
+                                            <p class="text-muted mb-0">전체 팀</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <i class="bi bi-calendar-check display-4 text-warning mb-2"></i>
+                                            <h4 class="mb-0" id="totalPlans">-</h4>
+                                            <p class="text-muted mb-0">전체 계획</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center">
+                                        <div class="card-body">
+                                            <i class="bi bi-activity display-4 text-info mb-2"></i>
+                                            <h4 class="mb-0" id="activeUsers">-</h4>
+                                            <p class="text-muted mb-0">활성 사용자</p>
+                                            <small class="text-muted">(최근 30일)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 팀 추가/수정 모달 -->
+    <div class="modal fade" id="teamModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="teamModalTitle">팀 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="teamForm">
+                        <input type="hidden" id="teamId">
+                        <div class="mb-3">
+                            <label for="teamName" class="form-label">팀 이름 *</label>
+                            <input type="text" class="form-control" id="teamName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="teamDescription" class="form-label">설명</label>
+                            <textarea class="form-control" id="teamDescription" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveTeamBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사용자 추가/수정 모달 -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">사용자 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label for="userUsername" class="form-label">사용자 ID *</label>
+                            <input type="text" class="form-control" id="userUsername" required>
+                        </div>
+                        <div class="mb-3" id="passwordField">
+                            <label for="userPassword" class="form-label">비밀번호 *</label>
+                            <input type="password" class="form-control" id="userPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userName" class="form-label">이름 *</label>
+                            <input type="text" class="form-control" id="userName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userEmail" class="form-label">이메일</label>
+                            <input type="email" class="form-control" id="userEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label for="userRole" class="form-label">역할</label>
+                            <select class="form-select" id="userRole">
+                                <option value="member">멤버</option>
+                                <option value="manager">매니저</option>
+                                <option value="admin">관리자</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="userTeam" class="form-label">팀</label>
+                            <select class="form-select" id="userTeam">
+                                <option value="">팀 선택</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveUserBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin.js"></script>
+    <script>
+        // 관리자 권한 확인
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 인증 확인
+            try {
+                await Auth.loadCurrentUser();
+                if (!Auth.isLoggedIn()) {
+                    window.location.href = '/login.html';
+                    return;
+                }
+            } catch (error) {
+                console.error('Authentication failed:', error);
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            const user = Auth.getCurrentUser();
+            if (user.role !== 'admin') {
+                alert('관리자 권한이 필요합니다.');
+                window.location.href = '/';
+                return;
+            }
+            
+            // 사용자 정보 표시
+            const teamName = user.team_name ? `(${user.team_name})` : '';
+            document.getElementById('userNameDisplay').textContent = `${user.name}${teamName}`;
+
+            // 권한별 메뉴 표시
+            if (user.team_id) {
+                const teamNavItem = document.getElementById('teamNavItem');
+                if (teamNavItem) {
+                    teamNavItem.classList.remove('d-none');
+                }
+            }
+
+            const allNavItem = document.getElementById('allNavItem');
+            if (allNavItem) {
+                allNavItem.classList.remove('d-none');
+            }
+
+            // 이벤트 리스너
+            document.getElementById('logoutBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                Auth.logout();
+            });
+
+            document.getElementById('profileBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                Auth.showProfile();
+            });
+
+            const saveProfileBtn = document.getElementById('saveProfileBtn');
+            if (saveProfileBtn) {
+                saveProfileBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    Auth.saveProfile();
+                });
+            }
+        });
+    </script>
+
+    <!-- 푸터 -->
+    <footer class="bg-light border-top mt-5 py-4">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-lg-6 mb-3 mb-lg-0">
+                    <h6 class="text-primary mb-2">📋 ED&C PDCA 시스템</h6>
+                    <p class="text-muted small mb-1">효율적인 계획-실행-점검-조치 관리를 위한 통합 플랫폼</p>
+                    <div class="d-flex flex-wrap gap-3 small">
+                        <a href="/" class="text-primary text-decoration-none">🏠 대시보드</a>
+                        <a href="/weekly-report.html" class="text-primary text-decoration-none">📊 주간보고서</a>
+                        <a href="/team-calendar.html" class="text-primary text-decoration-none">👥 팀 캘린더</a>
+                        <a href="/admin.html" class="text-primary text-decoration-none">⚙️ 관리자</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <div class="mb-2">
+                        <span class="badge bg-success small">⚡ 시스템 정상</span>
+                        <span class="badge bg-info small ms-1">🔒 보안연결</span>
+                    </div>
+                    <div class="small text-muted">
+                        <div>© 2025 EDMFG • EDA Team • Developed by cs.jo</div>
+                        <div class="mt-1">
+                            <span class="me-3">🌍 Seoul, KR (UTC+9)</span>
+                            <span>v1.0.0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <hr class="text-muted my-3">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <small class="text-muted">
+                        🔧 <strong>관리자 패널:</strong> 사용자 관리, 팀 설정, 시스템 백업 및 복구 기능을 제공합니다.
+                    </small>
+                </div>
+                <div class="col-md-4 text-md-end mt-2 mt-md-0">
+                    <small class="text-muted">
+                        ❓ 문의: <a href="mailto:cs.jo@ednc.com" class="text-primary text-decoration-none">cs.jo@ednc.com</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
