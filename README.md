@@ -52,7 +52,7 @@ BACKEND_PORT=3001
 JWT_SECRET=your-super-secret-key-change-this-in-production
 JWT_EXPIRE=30d
 
-# 기본 관리자 계정
+# 기본 관리자 계정 (초기 설정시 필요)
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=admin123
 ADMIN_NAME=관리자
@@ -89,7 +89,6 @@ npm run pm2:stop
 ## 📱 사용법
 
 ### 1. 로그인
-- 기본 관리자 계정: `admin` / `admin123`
 - 브라우저에서 `http://HOST_IP:3000/login.html` 접속
 
 ### 2. 계획 관리
