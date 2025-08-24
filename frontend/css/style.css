@@ -714,16 +714,34 @@ body {
 }
 
 .report-table th {
-  background-color: var(--light-color);
-  font-weight: 600;
-  border-bottom: 2px solid #dee2e6;
+  background-color: #e9ecef;
+  font-weight: 700;
+  border-bottom: 2px solid #adb5bd;
+  border-top: 1px solid #adb5bd;
   font-size: 0.9rem;
 }
 
 .report-table td {
   vertical-align: middle;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #dee2e6;
   font-size: 0.85rem;
+}
+
+.report-table.table-bordered th,
+.report-table.table-bordered td {
+  border: 1px solid #dee2e6;
+}
+
+.report-table.table-bordered thead th {
+  border-bottom: 2px solid #adb5bd;
+}
+
+.report-table tbody tr:nth-child(even) {
+  background-color: #f8f9fa;
+}
+
+.report-table tbody tr:hover {
+  background-color: #e3f2fd;
 }
 
 .status-completed { 
@@ -782,7 +800,13 @@ body {
   .report-table th,
   .report-table td {
     font-size: 11px;
-    border: 1px solid #ccc !important;
+    border: 1px solid #999 !important;
+  }
+  
+  .report-table th {
+    background-color: #e9ecef !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid #999 !important;
   }
   
   .table {

@@ -235,7 +235,9 @@ function renderThisWeekTable() {
             const isFirstPlan = index === 0;
             const rowspan = isFirstPlan ? plans.length : 0;
             
-            html += '<tr>';
+            // Add cancelled-event class for cancelled plans
+            const rowClass = plan.status === 'cancelled' ? ' class="cancelled-event"' : '';
+            html += `<tr${rowClass}>`;
             
             // 날짜 (첫 번째 계획에만 표시)
             if (isFirstPlan) {
@@ -243,37 +245,47 @@ function renderThisWeekTable() {
             }
             
             // 계획 (Plan) - 시간은 별도 컬럼으로 분리
+            const planTitleClass = plan.status === 'cancelled' ? 'fw-semibold' : 'fw-semibold';
+            const planDescClass = plan.status === 'cancelled' ? 'text-muted' : 'text-muted';
+            const planTitleStyle = plan.status === 'cancelled' ? ' style="color: #6c757d !important; opacity: 0.7 !important; text-decoration: line-through !important; font-weight: normal !important;"' : '';
+            const planDescStyle = plan.status === 'cancelled' ? ' style="color: #6c757d !important; opacity: 0.7 !important; text-decoration: line-through !important; font-weight: normal !important;"' : '';
             html += `<td>
-                <div class="fw-semibold">${plan.title}</div>
-                ${plan.description ? `<div><small class="text-muted">${plan.description}</small></div>` : ''}
+                <div class="${planTitleClass}"${planTitleStyle}>${plan.title}</div>
+                ${plan.description ? `<div><small class="${planDescClass}"${planDescStyle}>${plan.description}</small></div>` : ''}
             </td>`;
             
             // 계획시간
             const planTime = plan.start_time && plan.end_time ? 
                 `${formatTime(plan.start_time)}-${formatTime(plan.end_time)}` : '-';
-            html += `<td><div class="cell-badge time-cell time-planned">${planTime}</div></td>`;
+            const timeStyle = plan.status === 'cancelled' ? ' style="background-color: #e9ecef; color: #6c757d; opacity: 0.7; text-decoration: line-through;"' : '';
+            html += `<td><div class="cell-badge time-cell time-planned"${timeStyle}>${planTime}</div></td>`;
             
             // 실제시간
             const actualTime = plan.actual_start_time && plan.actual_end_time ? 
                 `${formatTime(plan.actual_start_time)}-${formatTime(plan.actual_end_time)}` : '-';
-            html += `<td><div class="cell-badge time-cell time-actual">${actualTime}</div></td>`;
+            html += `<td><div class="cell-badge time-cell time-actual"${timeStyle}>${actualTime}</div></td>`;
             
             // 실행 (Do)
             let doContent = plan.do_content || '-';
+            const contentStyle = plan.status === 'cancelled' ? ' style="color: #6c757d; opacity: 0.7; text-decoration: line-through;"' : '';
             if (plan.location && plan.do_content) {
-                doContent = `<div class="content-highlight">${plan.do_content}<br><small class="text-muted"><i class="bi bi-geo-alt"></i> ${plan.location}</small></div>`;
+                doContent = `<div class="content-highlight"${contentStyle}>${plan.do_content}<br><small class="text-muted"><i class="bi bi-geo-alt"></i> ${plan.location}</small></div>`;
             } else if (plan.location && !plan.do_content) {
-                doContent = `<div class="cell-badge location-badge"><i class="bi bi-geo-alt"></i> ${plan.location}</div>`;
+                doContent = `<div class="cell-badge location-badge"${contentStyle}><i class="bi bi-geo-alt"></i> ${plan.location}</div>`;
             } else if (plan.do_content) {
-                doContent = `<div class="content-highlight">${plan.do_content}</div>`;
+                doContent = `<div class="content-highlight"${contentStyle}>${plan.do_content}</div>`;
+            } else if (plan.status === 'cancelled') {
+                doContent = `<span${contentStyle}>-</span>`;
             }
             html += `<td>${doContent}</td>`;
             
             // 점검 (Check)
-            html += `<td>${plan.check_content || '-'}</td>`;
+            const checkContent = plan.check_content || '-';
+            html += `<td><span${contentStyle}>${checkContent}</span></td>`;
             
             // 개선 (Action)
-            html += `<td>${plan.action_content || '-'}</td>`;
+            const actionContent = plan.action_content || '-';
+            html += `<td><span${contentStyle}>${actionContent}</span></td>`;
             
             // 상태
             const statusText = getStatusText(plan.status);
