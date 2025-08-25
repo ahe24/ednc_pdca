@@ -140,6 +140,8 @@ function updateDateRange() {
     
     const startDate = new Date(reportData.dateRange.thisWeekStart);
     const endDate = new Date(reportData.dateRange.thisWeekEnd);
+    const nextWeekStart = new Date(reportData.dateRange.nextWeekStart);
+    const nextWeekEnd = new Date(reportData.dateRange.nextWeekEnd);
     
     const startMonth = startDate.getMonth() + 1;
     const startDay = startDate.getDate();
@@ -149,6 +151,34 @@ function updateDateRange() {
     
     const rangeText = `${year}년 ${startMonth}월 ${startDay}일 - ${endMonth}월 ${endDay}일`;
     document.getElementById('reportDateRange').textContent = rangeText;
+    
+    // 테이블 헤더 업데이트
+    updateTableHeaders(startDate, endDate, nextWeekStart, nextWeekEnd);
+}
+
+// 테이블 헤더 업데이트
+function updateTableHeaders(thisWeekStart, thisWeekEnd, nextWeekStart, nextWeekEnd) {
+    const thisWeekStartMonth = thisWeekStart.getMonth() + 1;
+    const thisWeekStartDay = thisWeekStart.getDate();
+    const thisWeekEndMonth = thisWeekEnd.getMonth() + 1;
+    const thisWeekEndDay = thisWeekEnd.getDate();
+    
+    const nextWeekStartMonth = nextWeekStart.getMonth() + 1;
+    const nextWeekStartDay = nextWeekStart.getDate();
+    const nextWeekEndMonth = nextWeekEnd.getMonth() + 1;
+    const nextWeekEndDay = nextWeekEnd.getDate();
+    
+    // 이번 주 테이블 헤더 업데이트
+    const thisWeekHeader = document.querySelector('#thisWeekTable').closest('.card').querySelector('.card-header h6');
+    if (thisWeekHeader) {
+        thisWeekHeader.textContent = `이번 주 PDCA (${thisWeekStartMonth}/${thisWeekStartDay}-${thisWeekEndMonth}/${thisWeekEndDay})`;
+    }
+    
+    // 다음 주 테이블 헤더 업데이트
+    const nextWeekHeader = document.querySelector('#nextWeekTable').closest('.card').querySelector('.card-header h6');
+    if (nextWeekHeader) {
+        nextWeekHeader.textContent = `다음 주 계획 (${nextWeekStartMonth}/${nextWeekStartDay}-${nextWeekEndMonth}/${nextWeekEndDay})`;
+    }
 }
 
 // 주요 계획 렌더링
