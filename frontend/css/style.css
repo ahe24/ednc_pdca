@@ -157,7 +157,7 @@ body {
   height: auto !important;
   min-height: auto !important;
   line-height: normal !important;
-  padding: 2px 4px !important;
+  padding: 1px 3px !important;
   overflow: visible !important;
 }
 
@@ -237,13 +237,73 @@ body {
   transition: all 0.2s ease;
 }
 
+/* 월별 뷰 이벤트 스타일 - 더 가볍고 깔끔하게 */
+.fc-dayGridMonth .fc-event {
+  font-size: 0.75rem !important;
+  font-weight: 300 !important;
+  padding: 1px 3px;
+  margin: 1px 0;
+  opacity: 0.95;
+  border-radius: 3px;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
 .fc-event:hover {
   opacity: 0.8;
   transform: scale(1.02);
 }
 
+/* 월별 뷰 호버 효과 - 더 미묘하게 */
+.fc-dayGridMonth .fc-event:hover {
+  opacity: 0.95;
+  transform: none;
+  filter: brightness(1.1);
+}
+
 .fc-event-title {
   font-weight: 600;
+}
+
+/* 월별 뷰 이벤트 제목 - 더 가벼운 폰트 */
+.fc-dayGridMonth .fc-event-title {
+  font-weight: 300 !important;
+  font-size: 0.75rem !important;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 월별 뷰 모든 텍스트 요소에 가벼운 폰트 적용 */
+.fc-dayGridMonth .fc-event-title-container,
+.fc-dayGridMonth .fc-event-main,
+.fc-dayGridMonth .fc-event .fc-event-title {
+  font-weight: 300 !important;
+  font-size: 0.75rem !important;
+}
+
+/* 월별 뷰 이벤트 텍스트 강제 적용 - 모든 가능한 셀렉터 */
+.fc-daygrid .fc-event,
+.fc-daygrid-event,
+.fc-daygrid .fc-event .fc-event-title,
+.fc-daygrid .fc-event-title-container,
+.fc-daygrid .fc-event-main {
+  font-size: 0.75rem !important;
+  font-weight: 300 !important;
+}
+
+/* 최고 우선순위로 월별 뷰 스타일 강제 적용 */
+.fc .fc-daygrid-event,
+.fc .fc-daygrid-event .fc-event-title,
+.fc .fc-daygrid-event .fc-event-main,
+.fc .fc-daygrid-event-harness .fc-event,
+.fc .fc-daygrid-event-harness .fc-event .fc-event-title {
+  font-size: 11px !important;
+  font-weight: 300 !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  padding: 2px 4px !important;
 }
 
 .fc-event-time {
@@ -270,6 +330,25 @@ body {
   color: #212529;
 }
 
+/* 월별 뷰에서 더 나은 대비를 위한 색상 재정의 */
+.fc-dayGridMonth .fc-event[data-type="daily"] {
+  background-color: #e3f2fd !important;
+  border-color: #1976d2 !important;
+  color: #0d47a1 !important;
+}
+
+.fc-dayGridMonth .fc-event[data-type="weekly"] {
+  background-color: #e8f5e8 !important;
+  border-color: #388e3c !important;
+  color: #1b5e20 !important;
+}
+
+.fc-dayGridMonth .fc-event[data-type="monthly"] {
+  background-color: #fff8e1 !important;
+  border-color: #f57c00 !important;
+  color: #e65100 !important;
+}
+
 /* 특별 이벤트 타입별 스타일 (높은 우선순위) */
 .fc-event[data-special-type="annual_leave"] {
   background-color: rgba(255, 193, 7, 0.3) !important;
@@ -281,6 +360,19 @@ body {
   background-color: rgba(220, 53, 69, 0.3) !important;
   border-color: #dc3545 !important;
   color: #721c24 !important;
+}
+
+/* 월별 뷰 특별 이벤트 더 나은 대비 */
+.fc-dayGridMonth .fc-event[data-special-type="annual_leave"] {
+  background-color: #fff3cd !important;
+  border-color: #f57c00 !important;
+  color: #795548 !important;
+}
+
+.fc-dayGridMonth .fc-event[data-special-type="holiday"] {
+  background-color: #ffebee !important;
+  border-color: #d32f2f !important;
+  color: #b71c1c !important;
 }
 
 /* 상태별 스타일 */
@@ -296,6 +388,22 @@ body {
 .fc-event[data-status="in_progress"] {
   background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 255, 0.3) 50%, transparent 60%);
   animation: progress-shine 2s infinite;
+}
+
+/* 월별 뷰 상태별 더 나은 대비 */
+.fc-dayGridMonth .fc-event[data-status="completed"] {
+  background-color: #e8f5e8 !important;
+  border-color: #4caf50 !important;
+  color: #2e7d32 !important;
+  opacity: 1 !important;
+}
+
+.fc-dayGridMonth .fc-event[data-status="cancelled"] {
+  background-color: #f5f5f5 !important;
+  border-color: #9e9e9e !important;
+  color: #616161 !important;
+  opacity: 1 !important;
+  text-decoration: line-through !important;
 }
 
 @keyframes progress-shine {
@@ -477,6 +585,19 @@ body {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+  
+  /* 모바일 월별 뷰 이벤트 더 컴팩트하게 */
+  .fc-dayGridMonth .fc-event {
+    font-size: 0.7rem;
+    padding: 0px 2px;
+    margin: 0px;
+    font-weight: 300;
+  }
+  
+  .fc-dayGridMonth .fc-event-title {
+    font-weight: 300;
+    line-height: 1.1;
   }
 }
 
@@ -834,4 +955,35 @@ body {
   h4, h5, h6 {
     page-break-after: avoid;
   }
+}
+
+/* FINAL OVERRIDE - 월별 캘린더 이벤트 스타일 - 최고 우선순위 */
+body .fc .fc-daygrid-event,
+body .fc .fc-daygrid-event .fc-event-title,
+body .fc .fc-daygrid-event .fc-event-main,
+body .fc .fc-daygrid-event-harness .fc-event,
+body .fc .fc-daygrid-event-harness .fc-event .fc-event-title,
+body .fc .fc-daygrid-event-harness .fc-event .fc-event-main {
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  line-height: 1.3 !important;
+}
+
+/* Only the main event element should have borders */
+body .fc .fc-daygrid-event {
+  border-width: 1px !important;
+  border-style: solid !important;
+  padding: 2px 4px !important;
+  margin: 1px 0 !important;
+}
+
+/* Remove borders from nested elements to prevent multiple borders */
+body .fc .fc-daygrid-event .fc-event-title,
+body .fc .fc-daygrid-event .fc-event-main,
+body .fc .fc-daygrid-event-harness .fc-event .fc-event-title,
+body .fc .fc-daygrid-event-harness .fc-event .fc-event-main {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
