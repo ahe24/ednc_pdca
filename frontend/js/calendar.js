@@ -279,6 +279,59 @@ function initializeCalendar() {
     
     calendar.render();
     
+    // 날짜 셀 우클릭 이벤트 추가 (새 계획 생성)
+    calendarEl.addEventListener('contextmenu', function(e) {
+        // 이벤트가 아닌 빈 날짜 셀에서 우클릭한 경우만 처리
+        const clickedElement = e.target;
+        const isDateCell = clickedElement.classList.contains('fc-daygrid-day') || 
+                          clickedElement.classList.contains('fc-timegrid-slot') ||
+                          clickedElement.closest('.fc-daygrid-day') ||
+                          clickedElement.closest('.fc-timegrid-slot');
+        
+        // 이벤트 위에서 우클릭한 경우는 기존 이벤트 컨텍스트 메뉴가 처리
+        const isEvent = clickedElement.classList.contains('fc-event') || 
+                       clickedElement.closest('.fc-event');
+        
+        if (isDateCell && !isEvent) {
+            e.preventDefault();
+            
+            // 클릭한 날짜 정보 추출
+            let dateStr = null;
+            let timeInfo = null;
+            
+            // Day grid (월별 뷰) 처리
+            const dayCell = clickedElement.closest('.fc-daygrid-day');
+            if (dayCell) {
+                dateStr = dayCell.getAttribute('data-date');
+            }
+            
+            // Time grid (주별/일별 뷰) 처리
+            const timeSlot = clickedElement.closest('.fc-timegrid-slot');
+            if (timeSlot && !dateStr) {
+                // 시간 슬롯에서 날짜와 시간 정보 추출
+                const col = clickedElement.closest('.fc-timegrid-col');
+                if (col) {
+                    dateStr = col.getAttribute('data-date');
+                    
+                    // 클릭한 시간 계산
+                    const slotTime = timeSlot.getAttribute('data-time');
+                    if (slotTime) {
+                        const [hour, minute] = slotTime.split(':');
+                        timeInfo = {
+                            hour: parseInt(hour),
+                            minute: parseInt(minute)
+                        };
+                    }
+                }
+            }
+            
+            if (dateStr) {
+                console.log('Date right-click detected:', dateStr, timeInfo);
+                showDateContextMenu(e, dateStr, timeInfo);
+            }
+        }
+    });
+    
     // 페이지 로드 시 현재 날짜의 주별/월별 계획 로드
     const today = new Date().toISOString().split('T')[0];
     loadWeeklyMonthlyPlans(today);
@@ -765,6 +818,51 @@ function showContextMenu(event, calendarEvent) {
     setTimeout(() => {
         document.addEventListener('click', function hideMenu() {
             menu.remove();
+            document.removeEventListener('click', hideMenu);
+        });
+    }, 100);
+}
+
+// 날짜 우클릭 컨텍스트 메뉴 표시 (새 계획 생성)
+function showDateContextMenu(event, dateStr, timeInfo) {
+    // 기존 컨텍스트 메뉴 제거
+    const existingMenu = document.querySelector('.context-menu');
+    if (existingMenu) {
+        existingMenu.remove();
+    }
+    
+    const menu = document.createElement('div');
+    menu.className = 'context-menu';
+    menu.innerHTML = `
+        <div class="context-menu-item" data-action="new-plan">
+            <i class="fas fa-plus me-2"></i>새 계획 추가
+        </div>
+    `;
+    
+    // 메뉴 위치 설정
+    menu.style.left = event.pageX + 'px';
+    menu.style.top = event.pageY + 'px';
+    
+    document.body.appendChild(menu);
+    
+    // 메뉴 항목 클릭 이벤트
+    menu.addEventListener('click', function(e) {
+        const action = e.target.closest('.context-menu-item')?.getAttribute('data-action');
+        
+        if (action === 'new-plan') {
+            console.log('Creating new plan for date:', dateStr, 'with time:', timeInfo);
+            openPlanModal(null, dateStr, timeInfo);
+        }
+        
+        menu.remove();
+    });
+    
+    // 외부 클릭시 메뉴 숨기기
+    setTimeout(() => {
+        document.addEventListener('click', function hideMenu() {
+            if (document.body.contains(menu)) {
+                menu.remove();
+            }
             document.removeEventListener('click', hideMenu);
         });
     }, 100);

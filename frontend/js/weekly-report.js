@@ -72,6 +72,17 @@ function getStatusText(status) {
     return statusMap[status] || status;
 }
 
+// 상태 텍스트 (인쇄용 - 더 간단한 형태)
+function getStatusTextForPrint(status) {
+    const statusMap = {
+        'pending': '대기',
+        'in_progress': '진행중',
+        'completed': '완료',
+        'cancelled': '취소'
+    };
+    return statusMap[status] || status;
+}
+
 // 계획 타입 한글 변환
 function getTypeText(type) {
     const typeMap = {
@@ -257,13 +268,18 @@ function renderThisWeekTable() {
             // 계획시간
             const planTime = plan.start_time && plan.end_time ? 
                 `${formatTime(plan.start_time)}-${formatTime(plan.end_time)}` : '-';
-            const timeStyle = plan.status === 'cancelled' ? ' style="background-color: #e9ecef; color: #6c757d; opacity: 0.7; text-decoration: line-through;"' : '';
-            html += `<td><div class="cell-badge time-cell time-planned"${timeStyle}>${planTime}</div></td>`;
+            const planTimeCompact = plan.start_time && plan.end_time ? 
+                `${formatTime(plan.start_time)}-${formatTime(plan.end_time)}` : '-';
+            const timeClass = plan.status === 'cancelled' ? 'cell-badge time-cell time-planned cancelled-time' : 'cell-badge time-cell time-planned';
+            html += `<td><div class="${timeClass}" data-full-time="${planTime}" data-compact-time="${planTimeCompact}">${planTime}</div></td>`;
             
             // 실제시간
             const actualTime = plan.actual_start_time && plan.actual_end_time ? 
                 `${formatTime(plan.actual_start_time)}-${formatTime(plan.actual_end_time)}` : '-';
-            html += `<td><div class="cell-badge time-cell time-actual"${timeStyle}>${actualTime}</div></td>`;
+            const actualTimeCompact = plan.actual_start_time && plan.actual_end_time ? 
+                `${formatTime(plan.actual_start_time)}-${formatTime(plan.actual_end_time)}` : '-';
+            const actualTimeClass = plan.status === 'cancelled' ? 'cell-badge time-cell time-actual cancelled-time' : 'cell-badge time-cell time-actual';
+            html += `<td><div class="${actualTimeClass}" data-full-time="${actualTime}" data-compact-time="${actualTimeCompact}">${actualTime}</div></td>`;
             
             // 실행 (Do)
             let doContent = plan.do_content || '-';
@@ -290,7 +306,7 @@ function renderThisWeekTable() {
             // 상태
             const statusText = getStatusText(plan.status);
             const statusBadgeClass = plan.status === 'completed' ? 'cell-badge status-badge completed' : 'cell-badge status-badge';
-            html += `<td><div class="${statusBadgeClass}">${statusText}</div></td>`;
+            html += `<td><div class="${statusBadgeClass}" data-status="${plan.status}" data-print-text="${getStatusTextForPrint(plan.status)}">${statusText}</div></td>`;
             
             html += '</tr>';
         });

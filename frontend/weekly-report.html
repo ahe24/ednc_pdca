@@ -145,11 +145,271 @@
             border-left: 2px solid #dee2e6;
         }
         .print-hide { display: none; }
+        
+        /* Screen-only styling for cancelled time cells */
+        .cancelled-time {
+            background-color: #e9ecef !important;
+            color: #6c757d !important;
+            opacity: 0.7 !important;
+            text-decoration: line-through !important;
+        }
         @media print {
+            /* Force landscape orientation */
+            @page {
+                size: A4 landscape;
+                margin: 0.5in;
+            }
+            
             .no-print { display: none !important; }
             .print-hide { display: block !important; }
             .card { border: 1px solid #dee2e6 !important; box-shadow: none !important; }
-            body { font-size: 12px; }
+            
+            body { 
+                font-size: 10px; 
+                color: #000;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            /* Make tables fit to page width */
+            .report-table {
+                width: 100% !important;
+                table-layout: fixed !important;
+                font-size: 9px !important;
+            }
+            
+            /* Force table layout with highest priority */
+            body .report-table,
+            html .report-table {
+                table-layout: fixed !important;
+                width: 100% !important;
+            }
+            
+            .report-table th {
+                font-size: 10px !important;
+                padding: 0.25rem 0.3rem !important;
+                border: 1px solid #999 !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                hyphens: auto !important;
+                line-height: 1.3 !important;
+                background-color: #e9ecef !important;
+                font-weight: 700 !important;
+                border-bottom: 2px solid #999 !important;
+            }
+            
+            .report-table td {
+                font-size: 9px !important;
+                padding: 0.25rem 0.3rem !important;
+                border: 1px solid #999 !important;
+                word-wrap: break-word !important;
+                overflow-wrap: break-word !important;
+                hyphens: auto !important;
+                line-height: 1.3 !important;
+            }
+            
+            /* This Week Table (8 columns: 날짜,계획,계획시간,실제시간,실행,점검,개선,상태) */
+            #thisWeekTable th:nth-child(1),
+            #thisWeekTable td:nth-child(1) {
+                width: 8% !important;
+                max-width: 8% !important;
+            }
+            
+            #thisWeekTable th:nth-child(2),
+            #thisWeekTable td:nth-child(2) {
+                width: 18% !important;
+                max-width: 18% !important;
+            }
+            
+            #thisWeekTable th:nth-child(3),
+            #thisWeekTable td:nth-child(3) {
+                width: 11% !important;
+                max-width: 11% !important;
+                text-align: center !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+                text-overflow: ellipsis !important;
+                padding: 0.1rem 0.2rem !important;
+            }
+            
+            #thisWeekTable td:nth-child(3) .time-cell,
+            #thisWeekTable td:nth-child(3) .time-cell *,
+            #thisWeekTable td:nth-child(3) * {
+                background: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                color: #000 !important;
+                font-size: 9px !important;
+                text-decoration: none !important;
+                opacity: 1 !important;
+                line-height: 1.3 !important;
+            }
+            
+            /* Force black text for all time cells */
+            .time-cell, .time-cell *, 
+            .time-planned, .time-planned *,
+            .time-actual, .time-actual * {
+                color: #000 !important;
+                text-decoration: none !important;
+            }
+            
+            #thisWeekTable th:nth-child(4),
+            #thisWeekTable td:nth-child(4) {
+                width: 11% !important;
+                max-width: 11% !important;
+                text-align: center !important;
+                overflow: hidden !important;
+                white-space: nowrap !important;
+                text-overflow: ellipsis !important;
+                padding: 0.1rem 0.2rem !important;
+            }
+            
+            #thisWeekTable td:nth-child(4) .time-cell,
+            #thisWeekTable td:nth-child(4) .time-cell *,
+            #thisWeekTable td:nth-child(4) * {
+                background: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                color: #000 !important;
+                font-size: 9px !important;
+                text-decoration: none !important;
+                opacity: 1 !important;
+                line-height: 1.3 !important;
+            }
+            
+            #thisWeekTable th:nth-child(5),
+            #thisWeekTable td:nth-child(5) {
+                width: 16% !important;
+                max-width: 16% !important;
+            }
+            
+            #thisWeekTable th:nth-child(6),
+            #thisWeekTable td:nth-child(6) {
+                width: 16% !important;
+                max-width: 16% !important;
+            }
+            
+            #thisWeekTable th:nth-child(7),
+            #thisWeekTable td:nth-child(7) {
+                width: 16% !important;
+                max-width: 16% !important;
+            }
+            
+            #thisWeekTable th:nth-child(8),
+            #thisWeekTable td:nth-child(8) {
+                width: 8% !important;
+                max-width: 8% !important;
+                text-align: center !important;
+            }
+            
+            /* Next Week Table (5 columns: 날짜,계획제목,세부내용,시간,작업위치) */
+            #nextWeekTable th:nth-child(1),
+            #nextWeekTable td:nth-child(1) {
+                width: 10% !important;
+                max-width: 10% !important;
+            }
+            
+            #nextWeekTable th:nth-child(2),
+            #nextWeekTable td:nth-child(2) {
+                width: 25% !important;
+                max-width: 25% !important;
+            }
+            
+            #nextWeekTable th:nth-child(3),
+            #nextWeekTable td:nth-child(3) {
+                width: 35% !important;
+                max-width: 35% !important;
+                font-size: 9px !important;
+            }
+            
+            #nextWeekTable th:nth-child(4),
+            #nextWeekTable td:nth-child(4) {
+                width: 15% !important;
+                max-width: 15% !important;
+                text-align: center !important;
+            }
+            
+            #nextWeekTable th:nth-child(5),
+            #nextWeekTable td:nth-child(5) {
+                width: 15% !important;
+                max-width: 15% !important;
+                text-align: center !important;
+                font-size: 9px !important;
+            }
+            
+            /* Print-specific styling - remove badge effects */
+            .status-badge {
+                font-size: 9px !important;
+                padding: 0 !important;
+                text-align: center !important;
+                white-space: nowrap !important;
+                background: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                color: inherit !important;
+                line-height: 1.3 !important;
+            }
+            
+            .cell-badge {
+                background: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+                font-size: 9px !important;
+            }
+            
+            /* Override specific content classes */
+            .content-highlight {
+                font-size: 9px !important;
+                font-style: normal !important;
+            }
+            
+            .location-badge {
+                font-size: 9px !important;
+                font-style: normal !important;
+            }
+            
+            small, .text-muted {
+                font-size: 9px !important;
+                font-style: normal !important;
+                color: inherit !important;
+                line-height: 1.3 !important;
+            }
+            
+            
+            /* Prevent page breaks inside table rows */
+            .report-table tr {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Container adjustments for landscape */
+            .container-fluid {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+            
+            .card-body {
+                padding: 0.5rem !important;
+            }
+            
+            /* Title and header adjustments */
+            h4 {
+                font-size: 14px !important;
+                margin: 0.5rem 0 !important;
+            }
+            
+            h5 {
+                font-size: 12px !important;
+                margin: 0.3rem 0 !important;
+            }
+            
+            /* Hide any overflow to fit page */
+            .table-responsive {
+                overflow: visible !important;
+            }
+            
         }
     </style>
 </head>
@@ -280,14 +540,14 @@
                             <table class="table table-hover table-bordered mb-0 report-table" id="thisWeekTable">
                                 <thead>
                                     <tr>
-                                        <th style="width: 8%">날짜</th>
-                                        <th style="width: 18%">계획 (Plan)</th>
-                                        <th style="width: 10%">계획시간</th>
-                                        <th style="width: 10%">실제시간</th>
-                                        <th style="width: 18%">실행 (Do)</th>
-                                        <th style="width: 18%">점검 (Check)</th>
-                                        <th style="width: 18%">개선 (Action)</th>
-                                        <th style="width: 6%">상태</th>
+                                        <th>날짜</th>
+                                        <th>계획 (Plan)</th>
+                                        <th>계획시간</th>
+                                        <th>실제시간</th>
+                                        <th>실행 (Do)</th>
+                                        <th>점검 (Check)</th>
+                                        <th>개선 (Action)</th>
+                                        <th>상태</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -330,11 +590,11 @@
                             <table class="table table-hover table-bordered mb-0 report-table" id="nextWeekTable">
                                 <thead>
                                     <tr>
-                                        <th style="width: 10%">날짜</th>
-                                        <th style="width: 25%">계획 제목</th>
-                                        <th style="width: 35%">세부 내용</th>
-                                        <th style="width: 15%">시간</th>
-                                        <th style="width: 15%">작업위치</th>
+                                        <th>날짜</th>
+                                        <th>계획 제목</th>
+                                        <th>세부 내용</th>
+                                        <th>시간</th>
+                                        <th>작업위치</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -464,5 +724,33 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/weekly-report.js"></script>
+    <script>
+        // Handle print events to switch between display formats
+        window.addEventListener('beforeprint', function() {
+            // Switch to print format
+            document.querySelectorAll('.status-badge[data-print-text]').forEach(el => {
+                el.setAttribute('data-original-text', el.textContent);
+                el.textContent = el.getAttribute('data-print-text');
+            });
+            
+            document.querySelectorAll('.time-cell[data-compact-time]').forEach(el => {
+                el.setAttribute('data-original-text', el.textContent);
+                el.textContent = el.getAttribute('data-compact-time');
+            });
+        });
+        
+        window.addEventListener('afterprint', function() {
+            // Switch back to screen format
+            document.querySelectorAll('.status-badge[data-original-text]').forEach(el => {
+                el.textContent = el.getAttribute('data-original-text');
+                el.removeAttribute('data-original-text');
+            });
+            
+            document.querySelectorAll('.time-cell[data-original-text]').forEach(el => {
+                el.textContent = el.getAttribute('data-original-text');
+                el.removeAttribute('data-original-text');
+            });
+        });
+    </script>
 </body>
 </html>
