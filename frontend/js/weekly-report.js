@@ -387,7 +387,7 @@ function renderNextWeekTable() {
     const tbody = document.querySelector('#nextWeekTable tbody');
     
     if (!reportData.nextWeek || reportData.nextWeek.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">다음 주 계획이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">다음 주 계획이 없습니다.</td></tr>';
         return;
     }
     
@@ -398,7 +398,7 @@ function renderNextWeekTable() {
     });
     
     if (filteredPlans.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">표시할 계획이 없습니다.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">표시할 계획이 없습니다.</td></tr>';
         return;
     }
     
@@ -433,11 +433,6 @@ function renderNextWeekTable() {
                 <div class="fw-semibold">${plan.title}</div>
             </td>`;
             
-            // 세부 내용
-            html += `<td>
-                ${plan.description ? `<div class="content-highlight">${plan.description}</div>` : '<span class="text-muted">-</span>'}
-            </td>`;
-            
             // 시간
             const timeText = plan.start_time && plan.end_time ? 
                 `${formatTime(plan.start_time)}-${formatTime(plan.end_time)}` : '-';
@@ -447,6 +442,11 @@ function renderNextWeekTable() {
             const locationText = plan.location ? 
                 `<div class="cell-badge location-badge"><i class="bi bi-geo-alt"></i> ${plan.location}</div>` : '-';
             html += `<td>${locationText}</td>`;
+            
+            // 세부 내용
+            html += `<td>
+                ${plan.description ? `<div class="content-highlight">${plan.description}</div>` : '<span class="text-muted">-</span>'}
+            </td>`;
             
             html += '</tr>';
         });
