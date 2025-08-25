@@ -8,6 +8,12 @@ const PORT = process.env.FRONTEND_PORT || 3000;
 // 정적 파일 서빙 (프론트엔드)
 app.use(express.static(path.join(__dirname, 'frontend')));
 
+// 백엔드 포트 설정을 프론트엔드에 제공
+app.get('/config.js', (_, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`window.CONFIG = { BACKEND_PORT: ${process.env.BACKEND_PORT || 3001} };`);
+});
+
 // SPA 라우팅 - 모든 요청을 index.html로 라우팅
 app.get('*', (req, res) => {
   // 로그인 페이지 요청인 경우

@@ -1,16 +1,12 @@
 // API 통신 관련 기능
-console.log('API.js loaded - baseURL will be:', (() => {
-    const host = window.location.hostname;
-    const backendPort = 3001;
-    return `http://${host}:${backendPort}`;
-})());
-
 const API = {
-    // 기본 설정 - 동적으로 백엔드 포트 설정
+    // 기본 설정 - 환경 변수에서 백엔드 포트 설정
     baseURL: (() => {
         const host = window.location.hostname;
-        const backendPort = 3001;
-        return `http://${host}:${backendPort}`;
+        const backendPort = window.CONFIG?.BACKEND_PORT || 3001;
+        const url = `http://${host}:${backendPort}`;
+        console.log('API.js loaded - baseURL:', url);
+        return url;
     })(),
     
     // HTTP 요청 공통 함수
