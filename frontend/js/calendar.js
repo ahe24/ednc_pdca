@@ -181,6 +181,11 @@ function initializeCalendar() {
             element.setAttribute('data-type', event.extendedProps.type);
             element.setAttribute('data-status', event.extendedProps.status);
             
+            // 특별 이벤트 타입 속성 추가
+            if (event.extendedProps.specialEventType) {
+                element.setAttribute('data-special-type', event.extendedProps.specialEventType);
+            }
+            
             // 취소된 이벤트의 경우 특별한 HTML 구조 생성
             if (event.extendedProps.status === 'cancelled') {
                 const titleElement = element.querySelector('.fc-event-title');
@@ -349,6 +354,10 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                         eventTitle = `${statusPrefix} ${plan.title}`;
                     }
                     
+                    // 특별 이벤트 타입 확인 (연차, 휴일 등)
+                    const specialColors = plan.special_event_type ? 
+                        getSpecialEventColors(plan.special_event_type) : null;
+                    
                     const event = {
                         id: plan.id,
                         title: eventTitle,
@@ -363,11 +372,12 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             location: plan.location,
                             user_name: plan.user_name,
                             useActualTime: false, // 월별 뷰에서는 시간 정보 사용 안함
-                            originalTitle: plan.title // 원본 제목 저장
+                            originalTitle: plan.title, // 원본 제목 저장
+                            specialEventType: plan.special_event_type
                         },
-                        backgroundColor: getStatusColor(plan.status, false),
-                        borderColor: getStatusBorderColor(plan.status, false),
-                        textColor: getStatusTextColor(plan.status, false),
+                        backgroundColor: specialColors ? specialColors.backgroundColor : getStatusColor(plan.status, false),
+                        borderColor: specialColors ? specialColors.borderColor : getStatusBorderColor(plan.status, false),
+                        textColor: specialColors ? specialColors.textColor : getStatusTextColor(plan.status, false),
                         classNames: getStatusClasses(plan.status)
                     };
                     events.push(event);
@@ -407,12 +417,19 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                         plannedClasses = ['planned-event'];
                     }
                     
+                    // 특별 이벤트 타입 확인 (연차, 휴일 등)
+                    const specialColors = plan.special_event_type ? 
+                        getSpecialEventColors(plan.special_event_type) : null;
+                    
+                    // all-day 여부 결정: 특별 이벤트이거나 non-daily 타입
+                    const isAllDay = plan.special_event_type || plan.type !== 'daily';
+                    
                     const plannedEvent = {
                         id: `planned-${plan.id}`,
                         title: plannedTitle,
                         start: plannedStartDateTime,
                         end: plannedEndDateTime,
-                        allDay: plan.type !== 'daily',
+                        allDay: isAllDay,
                         extendedProps: {
                             type: plan.type,
                             status: plan.status,
@@ -422,11 +439,12 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             user_name: plan.user_name,
                             eventType: 'planned',
                             originalId: plan.id,
-                            originalTitle: plan.title // 원본 제목 저장
+                            originalTitle: plan.title, // 원본 제목 저장
+                            specialEventType: plan.special_event_type
                         },
-                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
-                        borderColor: '#007bff',
-                        textColor: '#007bff',
+                        backgroundColor: specialColors ? specialColors.backgroundColor : 'rgba(0, 123, 255, 0.2)',
+                        borderColor: specialColors ? specialColors.borderColor : '#007bff',
+                        textColor: specialColors ? specialColors.textColor : '#007bff',
                         classNames: plannedClasses
                     };
                     events.push(plannedEvent);
@@ -523,6 +541,26 @@ function getStatusPrefix(status) {
         case 'cancelled': return '❌';
         case 'planned': 
         default: return '📅';
+    }
+}
+
+// 특별 이벤트 타입별 색상 반환
+function getSpecialEventColors(specialType) {
+    switch (specialType) {
+        case 'annual_leave':
+            return {
+                backgroundColor: 'rgba(255, 193, 7, 0.3)', // 연한 노란색
+                borderColor: '#ffc107',
+                textColor: '#856404' // 진한 노란색 텍스트
+            };
+        case 'holiday':
+            return {
+                backgroundColor: 'rgba(220, 53, 69, 0.3)', // 연한 빨간색
+                borderColor: '#dc3545',
+                textColor: '#721c24' // 진한 빨간색 텍스트
+            };
+        default:
+            return null;
     }
 }
 

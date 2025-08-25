@@ -270,6 +270,19 @@ body {
   color: #212529;
 }
 
+/* 특별 이벤트 타입별 스타일 (높은 우선순위) */
+.fc-event[data-special-type="annual_leave"] {
+  background-color: rgba(255, 193, 7, 0.3) !important;
+  border-color: #ffc107 !important;
+  color: #856404 !important;
+}
+
+.fc-event[data-special-type="holiday"] {
+  background-color: rgba(220, 53, 69, 0.3) !important;
+  border-color: #dc3545 !important;
+  color: #721c24 !important;
+}
+
 /* 상태별 스타일 */
 .fc-event[data-status="completed"] {
   opacity: 0.8;

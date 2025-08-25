@@ -112,21 +112,21 @@ router.post('/', [
   const {
     type, title, description, plan_date, 
     start_time, end_time, actual_start_time, actual_end_time,
-    work_type, location, is_recurring, parent_plan_id
+    work_type, location, is_recurring, parent_plan_id, special_event_type
   } = req.body;
 
   const db = getDatabase();
   db.run(
     `INSERT INTO plans 
      (user_id, type, title, description, plan_date, start_time, end_time, 
-      actual_start_time, actual_end_time, work_type, location, is_recurring, parent_plan_id) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      actual_start_time, actual_end_time, work_type, location, is_recurring, parent_plan_id, special_event_type) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       req.user.id, type, title, description, plan_date,
       start_time || '09:00', end_time || '17:00',
       actual_start_time || null, actual_end_time || null,
       work_type || 'office', location, 
-      is_recurring || false, parent_plan_id || null
+      is_recurring || false, parent_plan_id || null, special_event_type || null
     ],
     function(err) {
       if (err) {
@@ -153,7 +153,7 @@ router.put('/:id', [
   // 수정 가능한 필드만 허용
   const allowedFields = [
     'title', 'description', 'plan_date', 'start_time', 'end_time',
-    'actual_start_time', 'actual_end_time', 'work_type', 'location', 'status'
+    'actual_start_time', 'actual_end_time', 'work_type', 'location', 'status', 'special_event_type'
   ];
   
   const updateFields = [];

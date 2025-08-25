@@ -73,6 +73,7 @@ function createTables(db) {
           work_type TEXT CHECK(work_type IN ('office', 'field')) DEFAULT 'office',
           location TEXT,
           status TEXT CHECK(status IN ('planned', 'in_progress', 'completed', 'cancelled')) DEFAULT 'planned',
+          special_event_type TEXT CHECK(special_event_type IN ('annual_leave', 'holiday')),
           is_recurring BOOLEAN DEFAULT FALSE,
           parent_plan_id INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -81,6 +82,15 @@ function createTables(db) {
           FOREIGN KEY (parent_plan_id) REFERENCES plans(id)
         )
       `);
+
+      // 기존 데이터베이스에 special_event_type 컬럼 추가 (마이그레이션)
+      db.run(`
+        ALTER TABLE plans ADD COLUMN special_event_type TEXT CHECK(special_event_type IN ('annual_leave', 'holiday'))
+      `, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+          console.error('특별 이벤트 타입 컬럼 추가 실패:', err.message);
+        }
+      });
 
       // PDCA Records 테이블 생성
       db.run(`

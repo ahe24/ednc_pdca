@@ -160,11 +160,15 @@ function setupEventListeners() {
     // 시간 프리셋 버튼
     const morningTimeBtn = document.getElementById('morningTimeBtn');
     const afternoonTimeBtn = document.getElementById('afternoonTimeBtn');
+    const allDayBtn = document.getElementById('allDayBtn');
+    const annualLeaveBtn = document.getElementById('annualLeaveBtn');
+    const holidayBtn = document.getElementById('holidayBtn');
     
     if (morningTimeBtn) {
         morningTimeBtn.addEventListener('click', function() {
             document.getElementById('startTime').value = '09:00';
             document.getElementById('endTime').value = '11:30';
+            hideSpecialEventTypes();
         });
     }
     
@@ -172,6 +176,31 @@ function setupEventListeners() {
         afternoonTimeBtn.addEventListener('click', function() {
             document.getElementById('startTime').value = '12:30';
             document.getElementById('endTime').value = '17:00';
+            hideSpecialEventTypes();
+        });
+    }
+    
+    if (allDayBtn) {
+        allDayBtn.addEventListener('click', function() {
+            document.getElementById('startTime').value = '09:00';
+            document.getElementById('endTime').value = '17:00';
+            showSpecialEventTypes();
+        });
+    }
+    
+    if (annualLeaveBtn) {
+        annualLeaveBtn.addEventListener('click', function() {
+            document.getElementById('specialEventType').value = 'annual_leave';
+            // 연차 스타일 적용 - 노란색
+            setSpecialEventStyle('annual_leave');
+        });
+    }
+    
+    if (holidayBtn) {
+        holidayBtn.addEventListener('click', function() {
+            document.getElementById('specialEventType').value = 'holiday';
+            // 휴일 스타일 적용 - 빨간색
+            setSpecialEventStyle('holiday');
         });
     }
     
@@ -196,6 +225,51 @@ function setupEventListeners() {
         deleteWeeklyMonthlyPlanBtn.addEventListener('click', deleteWeeklyMonthlyPlan);
     }
     
+}
+
+// 특별 이벤트 타입 버튼 표시
+function showSpecialEventTypes() {
+    document.getElementById('specialEventTypes').classList.remove('d-none');
+}
+
+// 특별 이벤트 타입 버튼 숨기기
+function hideSpecialEventTypes() {
+    document.getElementById('specialEventTypes').classList.add('d-none');
+    document.getElementById('specialEventType').value = '';
+}
+
+// 특별 이벤트 스타일 설정
+function setSpecialEventStyle(type) {
+    // 버튼 활성화 상태 관리
+    document.querySelectorAll('#specialEventTypes .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    if (type === 'annual_leave') {
+        document.getElementById('annualLeaveBtn').classList.add('active');
+    } else if (type === 'holiday') {
+        document.getElementById('holidayBtn').classList.add('active');
+    }
+}
+
+// 특별 이벤트 타입별 색상 반환
+function getSpecialEventColors(specialType) {
+    switch (specialType) {
+        case 'annual_leave':
+            return {
+                backgroundColor: 'rgba(255, 193, 7, 0.3)', // 연한 노란색
+                borderColor: '#ffc107',
+                textColor: '#856404' // 진한 노란색 텍스트
+            };
+        case 'holiday':
+            return {
+                backgroundColor: 'rgba(220, 53, 69, 0.3)', // 연한 빨간색
+                borderColor: '#dc3545',
+                textColor: '#721c24' // 진한 빨간색 텍스트
+            };
+        default:
+            return null;
+    }
 }
 
 // 계획 모달 열기
@@ -273,7 +347,11 @@ function resetPlanForm() {
     document.getElementById('endTime').value = '17:00';
     document.getElementById('isFieldWork').checked = false;
     document.getElementById('location').value = '';
+    document.getElementById('specialEventType').value = '';
     toggleLocationField();
+    
+    // 특별 이벤트 타입 버튼 숨기기
+    hideSpecialEventTypes();
     
     // 오늘 날짜 설정
     const today = new Date().toISOString().split('T')[0];
@@ -308,6 +386,15 @@ function fillPlanForm(plan) {
     document.getElementById('doContent').value = plan.do_content || '';
     document.getElementById('checkContent').value = plan.check_content || '';
     document.getElementById('actionContent').value = plan.action_content || '';
+    
+    // 특별 이벤트 타입 설정
+    document.getElementById('specialEventType').value = plan.special_event_type || '';
+    if (plan.special_event_type) {
+        showSpecialEventTypes();
+        setSpecialEventStyle(plan.special_event_type);
+    } else {
+        hideSpecialEventTypes();
+    }
 }
 
 // 외근 체크박스에 따른 위치 필드 활성화/비활성화
@@ -416,7 +503,8 @@ async function savePlan() {
         actual_end_time: document.getElementById('actualEndTime').value || null,
         status: document.getElementById('planStatus').value,
         work_type: workType,
-        location: location
+        location: location,
+        special_event_type: document.getElementById('specialEventType').value || null
     };
     
     // PDCA 데이터

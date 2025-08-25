@@ -123,6 +123,8 @@
                         <input type="hidden" id="planId">
                         
                         <input type="hidden" id="planType" value="daily">
+                        <!-- 특별 이벤트 타입: 연차, 휴일 등 -->
+                        <input type="hidden" id="specialEventType" value="">
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -150,6 +152,21 @@
                                             title="오전: 9:00-11:30">오전</button>
                                     <button type="button" class="btn btn-outline-primary" id="afternoonTimeBtn" 
                                             title="오후: 12:30-17:00">오후</button>
+                                    <button type="button" class="btn btn-outline-success" id="allDayBtn" 
+                                            title="종일: 9:00-17:00">종일</button>
+                                </div>
+                            </div>
+                            
+                            <!-- 특별 이벤트 타입 버튼 (종일 클릭시 표시) -->
+                            <div id="specialEventTypes" class="mb-3 d-none">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="form-label mb-0 text-muted">특별 일정</label>
+                                    <div class="btn-group btn-group-sm" role="group" aria-label="특별 일정">
+                                        <button type="button" class="btn btn-outline-warning" id="annualLeaveBtn" 
+                                                title="연차 (노란색)">연차</button>
+                                        <button type="button" class="btn btn-outline-danger" id="holidayBtn" 
+                                                title="휴일 (빨간색)">휴일</button>
+                                    </div>
                                 </div>
                             </div>
                             
