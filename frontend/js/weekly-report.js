@@ -29,19 +29,59 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // 초기 데이터 로드 (현재 주)
     currentWeekDate = getCurrentMonday();
+    
+    // 즉시 현재 주 날짜 범위 표시 (main page처럼)
+    displayCurrentWeekRange();
+    
     loadReportData();
 });
 
-// 현재 주의 월요일 날짜 계산
+// 현재 주의 월요일 날짜 계산 (calendar.js와 완전히 동일한 로직)
 function getCurrentMonday() {
+    // 정확히 오늘 날짜 (로컬 시간)
     const today = new Date();
+    today.setHours(12, 0, 0, 0); // 정오로 설정해서 시간대 문제 해결
+    
+    console.log('🗓️ Today (noon):', today.toString());
+    
     const dayOfWeek = today.getDay();
-    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const mondayDate = new Date(today);
     
-    const monday = new Date(today);
-    monday.setDate(monday.getDate() + mondayOffset);
+    // calendar.js와 동일한 계산
+    if (dayOfWeek === 1) {
+        // 오늘이 월요일이면 그대로
+    } else if (dayOfWeek === 0) {
+        // 일요일이면 6일 전 (지난 월요일)
+        mondayDate.setDate(today.getDate() - 6);
+    } else {
+        // 화~토요일이면 dayOfWeek-1일 전
+        mondayDate.setDate(today.getDate() - (dayOfWeek - 1));
+    }
     
-    return monday.toISOString().split('T')[0];
+    // 년-월-일만 추출 (시간대 문제 없음)
+    const year = mondayDate.getFullYear();
+    const month = String(mondayDate.getMonth() + 1).padStart(2, '0');
+    const day = String(mondayDate.getDate()).padStart(2, '0');
+    const result = `${year}-${month}-${day}`;
+    
+    console.log('🗓️ Today day of week:', dayOfWeek, '/ Calculated Monday:', result);
+    return result;
+}
+
+// 현재 주 날짜 범위 즉시 표시 (main page와 동일한 방식)
+function displayCurrentWeekRange() {
+    const mondayDate = new Date(currentWeekDate);
+    const sunday = new Date(mondayDate);
+    sunday.setDate(mondayDate.getDate() + 6);
+    
+    const startMonth = mondayDate.getMonth() + 1;
+    const startDay = mondayDate.getDate();
+    const endMonth = sunday.getMonth() + 1;
+    const endDay = sunday.getDate();
+    const year = mondayDate.getFullYear();
+    
+    const rangeText = `${year}년 ${startMonth}월 ${startDay}일 - ${endMonth}월 ${endDay}일`;
+    document.getElementById('reportDateRange').textContent = rangeText;
 }
 
 // 날짜 포맷팅 (YYYY-MM-DD -> MM/DD (요일))
@@ -64,6 +104,7 @@ function formatTime(timeStr) {
 // 상태 한글 변환 (이모지 포함)
 function getStatusText(status) {
     const statusMap = {
+        'planned': '📅 계획됨',
         'pending': '⏳ 대기',
         'in_progress': '🔄 진행중',
         'completed': '✅ 완료',
@@ -75,6 +116,7 @@ function getStatusText(status) {
 // 상태 텍스트 (인쇄용 - 더 간단한 형태)
 function getStatusTextForPrint(status) {
     const statusMap = {
+        'planned': '계획됨',
         'pending': '대기',
         'in_progress': '진행중',
         'completed': '완료',
@@ -118,10 +160,13 @@ function renderMarkdown(text) {
 async function loadReportData() {
     try {
         const monday = currentWeekDate || getCurrentMonday();
+        console.log('📊 Loading report data for Monday:', monday);
+        
         const response = await API.request(`/api/plans/report/weekly?date=${monday}`);
         
         if (response.success) {
             reportData = response.data;
+            console.log('📊 Server returned date range:', reportData.dateRange);
             updateDateRange();
             renderMajorPlans();
             renderTables();
@@ -134,7 +179,8 @@ async function loadReportData() {
     }
 }
 
-// 날짜 범위 업데이트
+
+// 날짜 범위 업데이트 - 서버 데이터가 있으면 테이블 헤더만 업데이트
 function updateDateRange() {
     if (!reportData || !reportData.dateRange) return;
     
@@ -143,16 +189,7 @@ function updateDateRange() {
     const nextWeekStart = new Date(reportData.dateRange.nextWeekStart);
     const nextWeekEnd = new Date(reportData.dateRange.nextWeekEnd);
     
-    const startMonth = startDate.getMonth() + 1;
-    const startDay = startDate.getDate();
-    const endMonth = endDate.getMonth() + 1;
-    const endDay = endDate.getDate();
-    const year = startDate.getFullYear();
-    
-    const rangeText = `${year}년 ${startMonth}월 ${startDay}일 - ${endMonth}월 ${endDay}일`;
-    document.getElementById('reportDateRange').textContent = rangeText;
-    
-    // 테이블 헤더 업데이트
+    // 테이블 헤더만 업데이트 (날짜 범위는 건드리지 않음)
     updateTableHeaders(startDate, endDate, nextWeekStart, nextWeekEnd);
 }
 
@@ -335,7 +372,7 @@ function renderThisWeekTable() {
             
             // 상태
             const statusText = getStatusText(plan.status);
-            const statusBadgeClass = plan.status === 'completed' ? 'cell-badge status-badge completed' : 'cell-badge status-badge';
+            const statusBadgeClass = `cell-badge status-badge ${plan.status === 'in_progress' ? 'in-progress' : plan.status}`;
             html += `<td><div class="${statusBadgeClass}" data-status="${plan.status}" data-print-text="${getStatusTextForPrint(plan.status)}">${statusText}</div></td>`;
             
             html += '</tr>';
@@ -434,11 +471,18 @@ function navigateWeek(direction) {
     currentDate.setDate(currentDate.getDate() + (direction * 7));
     currentWeekDate = currentDate.toISOString().split('T')[0];
     
+    // 즉시 날짜 범위 업데이트
+    displayCurrentWeekRange();
+    
     loadReportData();
 }
 
 // 현재 주로 이동
 function goToCurrentWeek() {
     currentWeekDate = getCurrentMonday();
+    
+    // 즉시 날짜 범위 업데이트
+    displayCurrentWeekRange();
+    
     loadReportData();
 }

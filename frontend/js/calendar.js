@@ -46,8 +46,8 @@ function initializeCalendar() {
         // 초기 뷰
         initialView: 'dayGridMonth',
         
-        // 초기 날짜를 2025년 8월로 명시적 설정
-        initialDate: '2025-08-21',
+        // 초기 날짜를 오늘로 설정
+        initialDate: new Date(),
         
         // 주말 표시
         weekends: true,
@@ -220,18 +220,24 @@ function initializeCalendar() {
         
         // 날짜 범위 변경 시 (네비게이션 포함) 주별/월별 계획 업데이트
         datesSet: function(info) {
-            console.log('=== DATES CHANGED ===');
+            console.log('=== DATES SET CALLBACK FIRED ===');
             console.log('Date range:', info.start, 'to', info.end);
             console.log('View type:', info.view.type);
             
-            // 현재 보이는 날짜 범위의 중간 날짜를 기준으로 주별/월별 계획 업데이트
-            const startDate = new Date(info.start);
-            const endDate = new Date(info.end);
-            const middleDate = new Date(startDate.getTime() + (endDate.getTime() - startDate.getTime()) / 2);
-            const middleDateStr = middleDate.toISOString().split('T')[0];
-            
-            console.log('Updating weekly/monthly plans for middle date:', middleDateStr);
-            loadWeeklyMonthlyPlans(middleDateStr);
+            try {
+                // 항상 오늘을 기준으로 사용 (캘린더 보기와 관계없이)
+                const today = new Date();
+                const targetDate = today.toISOString().split('T')[0];
+                
+                console.log('📅 Always using today for weekly plans:', targetDate);
+                console.log('📅 Calendar view range:', new Date(info.start).toISOString().split('T')[0], 'to', new Date(info.end).toISOString().split('T')[0]);
+                
+                console.log('📅 Calling loadWeeklyMonthlyPlans with date:', targetDate);
+                loadWeeklyMonthlyPlans(targetDate);
+            } catch (error) {
+                console.error('ERROR in datesSet callback:', error);
+            }
+            console.log('=== DATES SET CALLBACK COMPLETE ===');
         },
         
         // 뷰 변경 시 이벤트 새로고침
@@ -333,8 +339,12 @@ function initializeCalendar() {
     });
     
     // 페이지 로드 시 현재 날짜의 주별/월별 계획 로드
-    const today = new Date().toISOString().split('T')[0];
-    loadWeeklyMonthlyPlans(today);
+    // datesSet 이벤트와 함께 명시적으로도 호출하여 확실하게 로드
+    setTimeout(() => {
+        console.log('🚀 Explicit weekly/monthly plans load after calendar render');
+        const today = new Date().toISOString().split('T')[0];
+        loadWeeklyMonthlyPlans(today);
+    }, 500);
 }
 
 // 캘린더 이벤트 로드
@@ -871,16 +881,25 @@ function showDateContextMenu(event, dateStr, timeInfo) {
 // 주별 계획을 날짜 범위로 로드
 async function loadWeeklyPlanByRange(weekStart, weekEnd) {
     try {
-        // 모든 주별 계획을 가져와서 클라이언트에서 필터링
-        const result = await API.plans.getAll({ type: 'weekly' });
+        console.log(`Looking for weekly plan with Monday date: ${weekStart}`);
+        
+        // 해당 주의 월요일 날짜로 주별 계획 조회
+        const result = await API.plans.getAll({ 
+            type: 'weekly',
+            date: weekStart
+        });
+        
+        console.log('Weekly plan API result:', result);
         
         if (result.success) {
-            // 해당 주 기간에 포함되는 계획 찾기
+            // 정확히 해당 주의 월요일 날짜와 일치하는 계획 찾기
             const filteredPlans = result.plans.filter(plan => {
                 const planDate = plan.plan_date;
-                return planDate >= weekStart && planDate <= weekEnd;
+                console.log(`Checking plan date ${planDate} against week start ${weekStart}`);
+                return planDate === weekStart;
             });
             
+            console.log(`Found ${filteredPlans.length} weekly plans for ${weekStart}`);
             return { success: true, plans: filteredPlans };
         }
         
@@ -893,41 +912,65 @@ async function loadWeeklyPlanByRange(weekStart, weekEnd) {
 
 // 주별/월별 계획 로드 및 표시
 async function loadWeeklyMonthlyPlans(dateStr) {
+    console.log('🔍 ===== LOADING WEEKLY/MONTHLY PLANS =====');
+    console.log('🔍 Input date:', dateStr);
+    
     const selectedDate = new Date(dateStr);
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth() + 1; // 0-based to 1-based
     
-    // 주차 계산 (해당 주의 월요일)
-    const dayOfWeek = selectedDate.getDay();
+    // 주차 계산 (해당 주의 월요일) - 수정된 로직
+    const dayOfWeek = selectedDate.getDay(); // 0=Sun, 1=Mon, 2=Tue, ..., 6=Sat
     const mondayDate = new Date(selectedDate);
-    mondayDate.setDate(selectedDate.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    
+    // 올바른 월요일 계산
+    if (dayOfWeek === 1) {
+        // 오늘이 월요일이면 그대로
+        // mondayDate는 이미 selectedDate와 같음
+    } else if (dayOfWeek === 0) {
+        // 일요일이면 6일 전 (지난 월요일)
+        mondayDate.setDate(selectedDate.getDate() - 6);
+    } else {
+        // 화~토요일이면 dayOfWeek-1일 전
+        mondayDate.setDate(selectedDate.getDate() - (dayOfWeek - 1));
+    }
     
     const weekStart = mondayDate.toISOString().split('T')[0];
     const weekEnd = new Date(mondayDate);
     weekEnd.setDate(mondayDate.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
     
-    console.log(`Loading plans for week: ${weekStart} to ${weekEndStr}`);
-    console.log(`Loading plans for month: ${year}-${month.toString().padStart(2, '0')}`);
+    console.log(`🔍 Calculated week: ${weekStart} to ${weekEndStr}`);
+    console.log(`🔍 Calculated month: ${year}-${month.toString().padStart(2, '0')}`);
+    console.log(`🔍 Selected date day of week: ${dayOfWeek} (0=Sunday)`);
     
     try {
+        console.log('🔍 Starting API calls...');
+        
         // 주별 계획 로드 - 해당 주 기간에 속하는 계획 찾기
         const weeklyResult = await loadWeeklyPlanByRange(weekStart, weekEndStr);
+        console.log('🔍 Weekly result:', weeklyResult);
         
         // 월별 계획 로드  
         const monthlyResult = await API.plans.getAll({
             type: 'monthly',
             date: `${year}-${month.toString().padStart(2, '0')}`
         });
+        console.log('🔍 Monthly result:', monthlyResult);
         
         // 주별 계획 표시
+        console.log('🔍 Displaying weekly plan...');
         displayWeeklyPlan(weeklyResult, weekStart, weekEndStr);
         
         // 월별 계획 표시
+        console.log('🔍 Displaying monthly plan...');
         displayMonthlyPlan(monthlyResult, year, month);
         
+        console.log('🔍 ===== WEEKLY/MONTHLY PLANS LOADING COMPLETE =====');
+        
     } catch (error) {
-        console.error('주별/월별 계획 로드 실패:', error);
+        console.error('🔍 주별/월별 계획 로드 실패:', error);
+        console.error('🔍 Error stack:', error.stack);
         Utils.showError('계획을 불러오는데 실패했습니다.');
     }
 }
