@@ -356,6 +356,10 @@ function initializeTeamCalendar() {
         slotDuration: '01:00:00',
         slotLabelInterval: '01:00',
         
+        // 이벤트 겹침 방지
+        slotEventOverlap: false,
+        eventOverlap: false,
+        
         // 날짜 클릭 이벤트 (주별/월별 계획 로드)
         dateClick: function(info) {
             if (selectedMemberId) {
@@ -839,7 +843,7 @@ function getStatusPrefix(status) {
 function getStatusColor(status, useActualTime) {
     switch (status) {
         case 'completed': return '#28a745';
-        case 'cancelled': return '#6c757d';
+        case 'cancelled': return 'rgba(108, 117, 125, 0.1)'; // 취소 = 매우 연한 회색
         case 'planned':
         default: 
             if (useActualTime) {
@@ -853,7 +857,7 @@ function getStatusColor(status, useActualTime) {
 function getStatusBorderColor(status, useActualTime) {
     switch (status) {
         case 'completed': return '#1e7e34';
-        case 'cancelled': return '#495057';
+        case 'cancelled': return 'rgba(73, 80, 87, 0.3)'; // 취소 테두리 = 연한 회색
         case 'planned':
         default: return '#007bff';
     }
@@ -862,7 +866,7 @@ function getStatusBorderColor(status, useActualTime) {
 function getStatusTextColor(status, useActualTime) {
     switch (status) {
         case 'completed': return '#ffffff';
-        case 'cancelled': return '#ffffff';
+        case 'cancelled': return '#6c757d'; // 취소 텍스트 = 회색
         case 'planned':
         default:
             if (useActualTime) {

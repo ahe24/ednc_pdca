@@ -67,6 +67,10 @@ function initializeCalendar() {
         slotDuration: '01:00:00',
         slotLabelInterval: '01:00',
         
+        // 이벤트 겹침 방지
+        slotEventOverlap: false,
+        eventOverlap: false,
+        
         // 날짜 클릭 이벤트 (주별/월별 계획 로드)
         dateClick: function(info) {
             // 날짜 문자열을 안전하게 추출
@@ -505,9 +509,9 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             originalTitle: plan.title, // 원본 제목 저장
                             specialEventType: plan.special_event_type
                         },
-                        backgroundColor: specialColors ? specialColors.backgroundColor : 'rgba(0, 123, 255, 0.15)',
-                        borderColor: specialColors ? specialColors.borderColor : '#007bff',
-                        textColor: specialColors ? specialColors.textColor : '#007bff',
+                        backgroundColor: specialColors ? specialColors.backgroundColor : (plan.status === 'cancelled' ? getStatusColor('cancelled', false) : 'rgba(0, 123, 255, 0.15)'),
+                        borderColor: specialColors ? specialColors.borderColor : (plan.status === 'cancelled' ? getStatusBorderColor('cancelled', false) : '#007bff'),
+                        textColor: specialColors ? specialColors.textColor : (plan.status === 'cancelled' ? getStatusTextColor('cancelled', false) : '#007bff'),
                         classNames: plannedClasses
                     };
                     events.push(plannedEvent);
@@ -631,7 +635,7 @@ function getSpecialEventColors(specialType) {
 function getStatusColor(status, useActualTime) {
     switch (status) {
         case 'completed': return '#28a745'; // 완료 = 초록
-        case 'cancelled': return '#6c757d'; // 취소 = 회색
+        case 'cancelled': return 'rgba(108, 117, 125, 0.1)'; // 취소 = 매우 연한 회색
         case 'planned':
         default: 
             if (useActualTime) {
@@ -645,7 +649,7 @@ function getStatusColor(status, useActualTime) {
 function getStatusBorderColor(status, useActualTime) {
     switch (status) {
         case 'completed': return '#1e7e34';
-        case 'cancelled': return '#495057';
+        case 'cancelled': return 'rgba(73, 80, 87, 0.3)'; // 취소 테두리 = 연한 회색
         case 'planned':
         default: return '#007bff';
     }
@@ -654,7 +658,7 @@ function getStatusBorderColor(status, useActualTime) {
 function getStatusTextColor(status, useActualTime) {
     switch (status) {
         case 'completed': return '#ffffff';
-        case 'cancelled': return '#ffffff';
+        case 'cancelled': return '#6c757d'; // 취소 텍스트 = 회색
         case 'planned':
         default:
             if (useActualTime) {
