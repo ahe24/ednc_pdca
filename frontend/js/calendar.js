@@ -505,7 +505,7 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             originalTitle: plan.title, // 원본 제목 저장
                             specialEventType: plan.special_event_type
                         },
-                        backgroundColor: specialColors ? specialColors.backgroundColor : 'rgba(0, 123, 255, 0.2)',
+                        backgroundColor: specialColors ? specialColors.backgroundColor : 'rgba(0, 123, 255, 0.15)',
                         borderColor: specialColors ? specialColors.borderColor : '#007bff',
                         textColor: specialColors ? specialColors.textColor : '#007bff',
                         classNames: plannedClasses
@@ -637,7 +637,7 @@ function getStatusColor(status, useActualTime) {
             if (useActualTime) {
                 return '#007bff'; // 계획됨이지만 실제시간 있음 = 파랑
             } else {
-                return 'rgba(0, 123, 255, 0.3)'; // 계획됨 = 연한 파랑
+                return 'rgba(0, 123, 255, 0.15)'; // 계획됨 = 더 연한 파랑
             }
     }
 }

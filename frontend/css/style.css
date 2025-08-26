@@ -605,7 +605,7 @@ body {
 .fc-event.planned-event {
   border-style: dashed !important;
   border-width: 2px !important;
-  opacity: 0.7;
+  opacity: 0.9;
 }
 
 /* 실제 이벤트 스타일 (주별/일별 뷰) */

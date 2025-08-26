@@ -605,7 +605,7 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                             originalId: plan.id,
                             originalTitle: plan.title // 원본 제목 저장
                         },
-                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.15)',
                         borderColor: '#007bff',
                         textColor: '#007bff',
                         classNames: plannedClasses
@@ -845,7 +845,7 @@ function getStatusColor(status, useActualTime) {
             if (useActualTime) {
                 return '#007bff';
             } else {
-                return 'rgba(0, 123, 255, 0.3)';
+                return 'rgba(0, 123, 255, 0.15)';
             }
     }
 }
