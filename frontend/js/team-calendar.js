@@ -524,13 +524,16 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                     const eventStartDateTime = plan.plan_date;
                     const eventEndDateTime = plan.plan_date;
                     
-                    const statusPrefix = getStatusPrefix(plan.status);
+                    let statusPrefix, eventTitle;
                     
-                    // 취소된 이벤트의 경우 특별한 제목 구조 생성
-                    let eventTitle;
-                    if (plan.status === 'cancelled') {
+                    // 변동업무인 경우 특별한 표시
+                    if (plan.is_changed_task) {
+                        statusPrefix = '🔄'; // 변동업무 아이콘
+                        eventTitle = `${statusPrefix} ${plan.title}`;
+                    } else if (plan.status === 'cancelled') {
                         eventTitle = plan.title; // ❌ 제거 - eventDidMount에서 처리
                     } else {
+                        statusPrefix = getStatusPrefix(plan.status);
                         eventTitle = `${statusPrefix} ${plan.title}`;
                     }
                     
@@ -548,12 +551,13 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                             location: plan.location,
                             user_name: plan.user_name,
                             useActualTime: false, // 월별 뷰에서는 시간 정보 사용 안함
-                            originalTitle: plan.title // 원본 제목 저장
+                            originalTitle: plan.title, // 원본 제목 저장
+                            isChangedTask: plan.is_changed_task
                         },
-                        backgroundColor: getStatusColor(plan.status, false),
-                        borderColor: getStatusBorderColor(plan.status, false),
-                        textColor: getStatusTextColor(plan.status, false),
-                        classNames: ['team-plan-event', ...getStatusClasses(plan.status)]
+                        backgroundColor: plan.is_changed_task ? getChangedTaskColor() : getStatusColor(plan.status, false),
+                        borderColor: plan.is_changed_task ? getChangedTaskBorderColor() : getStatusBorderColor(plan.status, false),
+                        textColor: plan.is_changed_task ? getChangedTaskTextColor() : getStatusTextColor(plan.status, false),
+                        classNames: plan.is_changed_task ? ['team-plan-event', 'changed-task-event'] : ['team-plan-event', ...getStatusClasses(plan.status)]
                     };
                     events.push(event);
                     
@@ -582,9 +586,13 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                         plannedEndDateTime = plan.plan_date;
                     }
                     
-                    // 취소된 이벤트의 경우 다른 표시
+                    // 변동업무와 일반 계획 구분
                     let plannedTitle, plannedClasses;
-                    if (plan.status === 'cancelled') {
+                    if (plan.is_changed_task) {
+                        // 변동업무는 실제 시간만 표시 (계획 시간 이벤트 생성 안함)
+                        console.log(`  -> Team calendar: Skipping planned event for changed task ${plan.id}`);
+                        // 아래에서 실제 시간 이벤트만 생성
+                    } else if (plan.status === 'cancelled') {
                         plannedTitle = plan.title; // ❌ 제거 - eventDidMount에서 처리
                         plannedClasses = ['team-planned-event', 'cancelled-event'];
                     } else {
@@ -592,30 +600,33 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                         plannedClasses = ['team-planned-event'];
                     }
                     
-                    const plannedEvent = {
-                        id: `planned-${plan.id}`,
-                        title: plannedTitle,
-                        start: plannedStartDateTime,
-                        end: plannedEndDateTime,
-                        allDay: plan.type !== 'daily',
-                        extendedProps: {
-                            type: plan.type,
-                            status: plan.status,
-                            description: plan.description,
-                            work_type: plan.work_type,
-                            location: plan.location,
-                            user_name: plan.user_name,
-                            eventType: 'planned',
-                            originalId: plan.id,
-                            originalTitle: plan.title // 원본 제목 저장
-                        },
-                        backgroundColor: 'rgba(0, 123, 255, 0.15)',
-                        borderColor: '#007bff',
-                        textColor: '#007bff',
-                        classNames: plannedClasses
-                    };
-                    events.push(plannedEvent);
-                    console.log(`  -> Team calendar: Added planned event: planned-${plan.id}`);
+                    // 변동업무가 아닌 경우만 계획 이벤트 생성
+                    if (!plan.is_changed_task) {
+                        const plannedEvent = {
+                            id: `planned-${plan.id}`,
+                            title: plannedTitle,
+                            start: plannedStartDateTime,
+                            end: plannedEndDateTime,
+                            allDay: plan.type !== 'daily',
+                            extendedProps: {
+                                type: plan.type,
+                                status: plan.status,
+                                description: plan.description,
+                                work_type: plan.work_type,
+                                location: plan.location,
+                                user_name: plan.user_name,
+                                eventType: 'planned',
+                                originalId: plan.id,
+                                originalTitle: plan.title // 원본 제목 저장
+                            },
+                            backgroundColor: 'rgba(0, 123, 255, 0.15)',
+                            borderColor: '#007bff',
+                            textColor: '#007bff',
+                            classNames: plannedClasses
+                        };
+                        events.push(plannedEvent);
+                        console.log(`  -> Team calendar: Added planned event: planned-${plan.id}`);
+                    }
                     
                     // 2. 실제 시간 이벤트
                     if (plan.actual_start_time && plan.actual_end_time) {
@@ -629,9 +640,16 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                         actualStartDateTime = new Date(year, month - 1, day, startHour, startMinute);
                         actualEndDateTime = new Date(year, month - 1, day, endHour, endMinute);
                         
+                        // 변동업무의 경우 다른 아이콘과 색상 사용
+                        const actualTitle = plan.is_changed_task ? `🔄 ${plan.title}` : `✅ ${plan.title}`;
+                        const actualBgColor = plan.is_changed_task ? getChangedTaskColor() : '#28a745';
+                        const actualBorderColor = plan.is_changed_task ? getChangedTaskBorderColor() : '#1e7e34';
+                        const actualTextColor = plan.is_changed_task ? getChangedTaskTextColor() : '#ffffff';
+                        const actualClasses = plan.is_changed_task ? ['team-changed-task-event'] : ['team-actual-event'];
+                        
                         const actualEvent = {
                             id: `actual-${plan.id}`,
-                            title: `✅ ${plan.title}`,
+                            title: actualTitle,
                             start: actualStartDateTime,
                             end: actualEndDateTime,
                             allDay: false,
@@ -643,12 +661,13 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                                 location: plan.location,
                                 user_name: plan.user_name,
                                 eventType: 'actual',
-                                originalId: plan.id
+                                originalId: plan.id,
+                                isChangedTask: plan.is_changed_task
                             },
-                            backgroundColor: plan.status === 'completed' ? '#28a745' : '#28a745',
-                            borderColor: plan.status === 'completed' ? '#1e7e34' : '#1e7e34',
-                            textColor: '#ffffff',
-                            classNames: ['team-actual-event']
+                            backgroundColor: actualBgColor,
+                            borderColor: actualBorderColor,
+                            textColor: actualTextColor,
+                            classNames: actualClasses
                         };
                         events.push(actualEvent);
                         console.log(`  -> Team calendar: Added actual event: actual-${plan.id}`);
@@ -786,8 +805,129 @@ function displayMemberMonthlyPlan(result, year, month) {
     }
 }
 
-// 이벤트 상세 정보 표시
-function showEventDetails(event) {
+// 이벤트 상세 정보 표시 (PDCA 포함)
+async function showEventDetails(event) {
+    const props = event.extendedProps;
+    
+    // Extract original plan ID
+    let planId = event.id;
+    if (planId.startsWith('planned-') || planId.startsWith('actual-')) {
+        planId = planId.replace(/^(planned|actual)-/, '');
+    }
+    
+    try {
+        // Fetch complete plan details including PDCA records
+        const response = await API.plans.getById(planId);
+        
+        console.log('Team calendar event details API response:', response);
+        
+        if (!response.success || !response.plan) {
+            console.log('API failed or no plan data, falling back to basic details');
+            // Fallback to basic event info if API fails
+            showBasicEventDetails(event);
+            return;
+        }
+        
+        const plan = response.plan;
+        
+        console.log('Plan data:', plan);
+        console.log('PDCA data in plan:', {
+            do_content: plan.do_content,
+            check_content: plan.check_content,
+            action_content: plan.action_content
+        });
+        
+        // Use originalTitle for cancelled events to avoid duplicate ❌
+        const displayTitle = props.status === 'cancelled' && props.originalTitle ? 
+            `❌ ${props.originalTitle}` : (plan.is_changed_task ? `🔄 ${plan.title}` : plan.title);
+        
+        let content = `
+            <div class="event-details p-3" style="max-width: 500px;">
+                <h6 class="fw-bold mb-3">${displayTitle}</h6>
+                
+                <div class="mb-3">
+                    <span class="badge bg-${getStatusBadgeColor(plan.status)} me-1">${getStatusText(plan.status)}</span>
+                    <span class="badge bg-secondary me-1">${getTypeText(plan.type)}</span>
+                    ${plan.is_changed_task ? '<span class="badge bg-warning text-dark">변동업무</span>' : ''}
+                </div>
+        `;
+        
+        // 계획 정보 섹션
+        content += `<div class="mb-3">
+            <h6 class="text-primary mb-2">📋 계획 정보</h6>`;
+        
+        if (plan.description) {
+            content += `<div class="mb-2"><strong>설명:</strong><br><small>${plan.description}</small></div>`;
+        }
+        
+        // 시간 정보
+        if (!plan.is_changed_task && plan.start_time && plan.end_time) {
+            content += `<div class="mb-2"><strong>계획 시간:</strong> ${plan.start_time.substring(0,5)} - ${plan.end_time.substring(0,5)}</div>`;
+        }
+        
+        if (plan.actual_start_time && plan.actual_end_time) {
+            content += `<div class="mb-2"><strong>실제 시간:</strong> ${plan.actual_start_time.substring(0,5)} - ${plan.actual_end_time.substring(0,5)}</div>`;
+        }
+        
+        if (plan.work_type) {
+            content += `<div class="mb-2"><strong>근무 형태:</strong> ${getWorkTypeText(plan.work_type)}</div>`;
+        }
+        
+        if (plan.location) {
+            content += `<div class="mb-2"><strong>위치:</strong> <i class="bi bi-geo-alt"></i> ${plan.location}</div>`;
+        }
+        
+        content += `<div class="mb-2"><strong>담당자:</strong> <i class="bi bi-person"></i> ${plan.user_name}</div>`;
+        content += `</div>`;
+        
+        // PDCA 정보 섹션
+        if (plan.do_content || plan.check_content || plan.action_content) {
+            content += `<div class="mb-3">
+                <h6 class="text-success mb-2">📝 PDCA 기록</h6>`;
+            
+            if (plan.do_content) {
+                content += `<div class="mb-2">
+                    <strong>실행 (Do):</strong><br>
+                    <small class="text-muted">${plan.do_content}</small>
+                </div>`;
+            }
+            
+            if (plan.check_content) {
+                content += `<div class="mb-2">
+                    <strong>점검 (Check):</strong><br>
+                    <small class="text-muted">${plan.check_content}</small>
+                </div>`;
+            }
+            
+            if (plan.action_content) {
+                content += `<div class="mb-2">
+                    <strong>조치 (Action):</strong><br>
+                    <small class="text-muted">${plan.action_content}</small>
+                </div>`;
+            }
+            
+            content += `</div>`;
+        } else {
+            content += `<div class="mb-3">
+                <h6 class="text-muted mb-2">📝 PDCA 기록</h6>
+                <p class="text-muted small">기록된 PDCA가 없습니다.</p>
+            </div>`;
+        }
+        
+        content += `</div>`;
+        
+        // Show in a more prominent way than basic alert
+        Utils.showInfo(content);
+        
+    } catch (error) {
+        console.error('Failed to load plan details:', error);
+        // Fallback to basic event info
+        showBasicEventDetails(event);
+    }
+}
+
+// 기본 이벤트 정보 표시 (API 실패시 대안)
+function showBasicEventDetails(event) {
     const props = event.extendedProps;
     // Use originalTitle for cancelled events to avoid duplicate ❌
     const displayTitle = props.status === 'cancelled' && props.originalTitle ? 
@@ -799,6 +939,7 @@ function showEventDetails(event) {
             <div class="mb-2">
                 <span class="badge bg-${getStatusBadgeColor(props.status)}">${getStatusText(props.status)}</span>
                 <span class="badge bg-secondary ms-1">${getTypeText(props.type)}</span>
+                ${props.isChangedTask ? '<span class="badge bg-warning text-dark ms-1">변동업무</span>' : ''}
             </div>
     `;
     
@@ -818,7 +959,6 @@ function showEventDetails(event) {
     
     content += `</div>`;
     
-    // 간단한 alert로 표시 (추후 모달로 개선 가능)
     Utils.showInfo(content);
 }
 
@@ -883,6 +1023,19 @@ function getStatusClasses(status) {
         baseClasses.push('cancelled-event');
     }
     return baseClasses;
+}
+
+// 변동업무 색상 함수들 추가 (personal calendar와 동일)
+function getChangedTaskColor() {
+    return '#fd7e14'; // 오렌지 색상 - 변동업무를 나타냄
+}
+
+function getChangedTaskBorderColor() {
+    return '#e76400'; // 진한 오렌지
+}
+
+function getChangedTaskTextColor() {
+    return '#ffffff'; // 흰색 텍스트
 }
 
 function getStatusText(status) {
