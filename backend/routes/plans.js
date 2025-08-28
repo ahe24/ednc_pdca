@@ -419,7 +419,12 @@ router.get('/report/weekly', (req, res) => {
     WHERE p.user_id = ? 
     AND p.plan_date BETWEEN ? AND ?
     AND p.type = 'daily'
-    ORDER BY p.plan_date ASC, p.start_time ASC
+    ORDER BY p.plan_date ASC, 
+             CASE 
+               WHEN p.start_time IS NULL AND p.actual_start_time IS NOT NULL 
+               THEN p.actual_start_time 
+               ELSE COALESCE(p.start_time, '23:59') 
+             END ASC
   `;
 
   // 다음 주 계획 데이터 조회 (daily 타입만)
@@ -433,7 +438,12 @@ router.get('/report/weekly', (req, res) => {
     AND p.plan_date BETWEEN ? AND ?
     AND p.type = 'daily'
     AND p.status != 'cancelled'
-    ORDER BY p.plan_date ASC, p.start_time ASC
+    ORDER BY p.plan_date ASC, 
+             CASE 
+               WHEN p.start_time IS NULL AND p.actual_start_time IS NOT NULL 
+               THEN p.actual_start_time 
+               ELSE COALESCE(p.start_time, '23:59') 
+             END ASC
   `;
 
   // 이번 달 주요 계획 조회 (monthly 타입)
