@@ -112,21 +112,22 @@ router.post('/', [
   const {
     type, title, description, plan_date, 
     start_time, end_time, actual_start_time, actual_end_time,
-    work_type, location, is_recurring, parent_plan_id, special_event_type
+    work_type, location, is_recurring, parent_plan_id, special_event_type, is_changed_task, status
   } = req.body;
 
   const db = getDatabase();
   db.run(
     `INSERT INTO plans 
      (user_id, type, title, description, plan_date, start_time, end_time, 
-      actual_start_time, actual_end_time, work_type, location, is_recurring, parent_plan_id, special_event_type) 
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      actual_start_time, actual_end_time, work_type, location, status, is_recurring, parent_plan_id, special_event_type, is_changed_task) 
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       req.user.id, type, title, description, plan_date,
-      start_time || '09:00', end_time || '17:00',
+      start_time || (is_changed_task ? null : '09:00'), 
+      end_time || (is_changed_task ? null : '17:00'),
       actual_start_time || null, actual_end_time || null,
       work_type || 'office', location, 
-      is_recurring || false, parent_plan_id || null, special_event_type || null
+      status || 'planned', is_recurring || false, parent_plan_id || null, special_event_type || null, is_changed_task || false
     ],
     function(err) {
       if (err) {
@@ -136,7 +137,7 @@ router.post('/', [
       res.status(201).json({ 
         success: true, 
         message: '계획이 생성되었습니다.',
-        planId: this.lastID 
+        plan: { id: this.lastID }
       });
     }
   );
@@ -153,7 +154,7 @@ router.put('/:id', [
   // 수정 가능한 필드만 허용
   const allowedFields = [
     'title', 'description', 'plan_date', 'start_time', 'end_time',
-    'actual_start_time', 'actual_end_time', 'work_type', 'location', 'status', 'special_event_type'
+    'actual_start_time', 'actual_end_time', 'work_type', 'location', 'status', 'special_event_type', 'is_changed_task'
   ];
   
   const updateFields = [];

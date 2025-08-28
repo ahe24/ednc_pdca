@@ -127,6 +127,19 @@ const API = {
         }
     },
 
+    // PDCA 관련 API
+    pdca: {
+        // PDCA 기록 생성/업데이트
+        async createOrUpdate(planId, pdcaData) {
+            return API.post(`/api/plans/${planId}/pdca`, pdcaData);
+        },
+
+        // PDCA 기록 조회
+        async get(planId) {
+            return API.get(`/api/plans/${planId}/pdca`);
+        }
+    },
+
     // 사용자 관련 API
     users: {
         // 전체 사용자 목록 (관리자만)

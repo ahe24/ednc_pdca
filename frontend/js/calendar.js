@@ -411,13 +411,16 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                     const eventStartDateTime = plan.plan_date;
                     const eventEndDateTime = plan.plan_date;
                     
-                    const statusPrefix = getStatusPrefix(plan.status);
+                    let statusPrefix, eventTitle;
                     
-                    // 취소된 이벤트의 경우 특별한 제목 구조 생성
-                    let eventTitle;
-                    if (plan.status === 'cancelled') {
+                    // 변동업무인 경우 특별한 표시
+                    if (plan.is_changed_task) {
+                        statusPrefix = '🔄'; // 변동업무 아이콘
+                        eventTitle = `${statusPrefix} ${plan.title}`;
+                    } else if (plan.status === 'cancelled') {
                         eventTitle = plan.title; // ❌ 제거 - eventDidMount에서 처리
                     } else {
+                        statusPrefix = getStatusPrefix(plan.status);
                         eventTitle = `${statusPrefix} ${plan.title}`;
                     }
                     
@@ -442,9 +445,12 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             originalTitle: plan.title, // 원본 제목 저장
                             specialEventType: plan.special_event_type
                         },
-                        backgroundColor: specialColors ? specialColors.backgroundColor : getStatusColor(plan.status, false),
-                        borderColor: specialColors ? specialColors.borderColor : getStatusBorderColor(plan.status, false),
-                        textColor: specialColors ? specialColors.textColor : getStatusTextColor(plan.status, false),
+                        backgroundColor: specialColors ? specialColors.backgroundColor : 
+                            (plan.is_changed_task ? getChangedTaskColor() : getStatusColor(plan.status, false)),
+                        borderColor: specialColors ? specialColors.borderColor : 
+                            (plan.is_changed_task ? getChangedTaskBorderColor() : getStatusBorderColor(plan.status, false)),
+                        textColor: specialColors ? specialColors.textColor : 
+                            (plan.is_changed_task ? getChangedTaskTextColor() : getStatusTextColor(plan.status, false)),
                         classNames: getStatusClasses(plan.status)
                     };
                     events.push(event);
@@ -474,9 +480,13 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                         plannedEndDateTime = plan.plan_date;
                     }
                     
-                    // 취소된 이벤트의 경우 다른 표시
+                    // 변동업무와 일반 계획 구분
                     let plannedTitle, plannedClasses;
-                    if (plan.status === 'cancelled') {
+                    if (plan.is_changed_task) {
+                        // 변동업무는 실제 시간만 표시 (계획 시간 이벤트 생성 안함)
+                        console.log(`  -> Skipping planned event for changed task ${plan.id}`);
+                        // 아래에서 실제 시간 이벤트만 생성
+                    } else if (plan.status === 'cancelled') {
                         plannedTitle = plan.title; // ❌ 제거 - eventDidMount에서 처리
                         plannedClasses = ['planned-event', 'cancelled-event'];
                     } else {
@@ -488,34 +498,37 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                     const specialColors = plan.special_event_type ? 
                         getSpecialEventColors(plan.special_event_type) : null;
                     
-                    // all-day 여부 결정: 특별 이벤트이거나 non-daily 타입
-                    const isAllDay = plan.special_event_type || plan.type !== 'daily';
-                    
-                    const plannedEvent = {
-                        id: `planned-${plan.id}`,
-                        title: plannedTitle,
-                        start: plannedStartDateTime,
-                        end: plannedEndDateTime,
-                        allDay: isAllDay,
-                        extendedProps: {
-                            type: plan.type,
-                            status: plan.status,
-                            description: plan.description,
-                            work_type: plan.work_type,
-                            location: plan.location,
-                            user_name: plan.user_name,
-                            eventType: 'planned',
-                            originalId: plan.id,
-                            originalTitle: plan.title, // 원본 제목 저장
-                            specialEventType: plan.special_event_type
-                        },
-                        backgroundColor: specialColors ? specialColors.backgroundColor : (plan.status === 'cancelled' ? getStatusColor('cancelled', false) : 'rgba(0, 123, 255, 0.15)'),
-                        borderColor: specialColors ? specialColors.borderColor : (plan.status === 'cancelled' ? getStatusBorderColor('cancelled', false) : '#007bff'),
-                        textColor: specialColors ? specialColors.textColor : (plan.status === 'cancelled' ? getStatusTextColor('cancelled', false) : '#007bff'),
-                        classNames: plannedClasses
-                    };
-                    events.push(plannedEvent);
-                    console.log(`  -> Added planned event: planned-${plan.id}`);
+                    // 변동업무가 아닌 경우만 계획 이벤트 생성
+                    if (!plan.is_changed_task) {
+                        // all-day 여부 결정: 특별 이벤트이거나 non-daily 타입
+                        const isAllDay = plan.special_event_type || plan.type !== 'daily';
+                        
+                        const plannedEvent = {
+                            id: `planned-${plan.id}`,
+                            title: plannedTitle,
+                            start: plannedStartDateTime,
+                            end: plannedEndDateTime,
+                            allDay: isAllDay,
+                            extendedProps: {
+                                type: plan.type,
+                                status: plan.status,
+                                description: plan.description,
+                                work_type: plan.work_type,
+                                location: plan.location,
+                                user_name: plan.user_name,
+                                eventType: 'planned',
+                                originalId: plan.id,
+                                originalTitle: plan.title, // 원본 제목 저장
+                                specialEventType: plan.special_event_type
+                            },
+                            backgroundColor: specialColors ? specialColors.backgroundColor : (plan.status === 'cancelled' ? getStatusColor('cancelled', false) : 'rgba(0, 123, 255, 0.15)'),
+                            borderColor: specialColors ? specialColors.borderColor : (plan.status === 'cancelled' ? getStatusBorderColor('cancelled', false) : '#007bff'),
+                            textColor: specialColors ? specialColors.textColor : (plan.status === 'cancelled' ? getStatusTextColor('cancelled', false) : '#007bff'),
+                            classNames: plannedClasses
+                        };
+                        events.push(plannedEvent);
+                        console.log(`  -> Added planned event: planned-${plan.id}`);
+                    }
                     
                     // 2. 실제 시간 이벤트 (있을 때만 표시)
                     if (plan.actual_start_time && plan.actual_end_time) {
@@ -529,9 +542,16 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                         actualStartDateTime = new Date(year, month - 1, day, startHour, startMinute);
                         actualEndDateTime = new Date(year, month - 1, day, endHour, endMinute);
                         
+                        // 변동업무의 경우 다른 아이콘과 색상 사용
+                        const actualTitle = plan.is_changed_task ? `🔄 ${plan.title}` : `✅ ${plan.title}`;
+                        const actualBgColor = plan.is_changed_task ? getChangedTaskColor() : '#28a745';
+                        const actualBorderColor = plan.is_changed_task ? getChangedTaskBorderColor() : '#1e7e34';
+                        const actualTextColor = plan.is_changed_task ? getChangedTaskTextColor() : '#ffffff';
+                        const actualClasses = plan.is_changed_task ? ['changed-task-event'] : ['actual-event'];
+                        
                         const actualEvent = {
                             id: `actual-${plan.id}`,
-                            title: `✅ ${plan.title}`,
+                            title: actualTitle,
                             start: actualStartDateTime,
                             end: actualEndDateTime,
                             allDay: false,
@@ -543,12 +563,13 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                                 location: plan.location,
                                 user_name: plan.user_name,
                                 eventType: 'actual',
-                                originalId: plan.id
+                                originalId: plan.id,
+                                isChangedTask: plan.is_changed_task
                             },
-                            backgroundColor: plan.status === 'completed' ? '#28a745' : '#28a745',
-                            borderColor: plan.status === 'completed' ? '#1e7e34' : '#1e7e34',
-                            textColor: '#ffffff',
-                            classNames: ['actual-event']
+                            backgroundColor: actualBgColor,
+                            borderColor: actualBorderColor,
+                            textColor: actualTextColor,
+                            classNames: actualClasses
                         };
                         events.push(actualEvent);
                         console.log(`  -> Added actual event: actual-${plan.id}`);
@@ -609,6 +630,19 @@ function getStatusPrefix(status) {
         case 'planned': 
         default: return '📅';
     }
+}
+
+// 변동업무 색상 설정
+function getChangedTaskColor() {
+    return '#fd7e14'; // 오렌지 색상 - 변동업무를 나타냄
+}
+
+function getChangedTaskBorderColor() {
+    return '#e76400'; // 진한 오렌지
+}
+
+function getChangedTaskTextColor() {
+    return '#ffffff'; // 흰색 텍스트
 }
 
 // 특별 이벤트 타입별 색상 반환
@@ -851,6 +885,10 @@ function showDateContextMenu(event, dateStr, timeInfo) {
         <div class="context-menu-item" data-action="new-plan">
             <i class="fas fa-plus me-2"></i>새 계획 추가
         </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="add-changed-task">
+            <i class="fas fa-exclamation-triangle me-2"></i>변동업무 추가
+        </div>
     `;
     
     // 메뉴 위치 설정
@@ -866,6 +904,9 @@ function showDateContextMenu(event, dateStr, timeInfo) {
         if (action === 'new-plan') {
             console.log('Creating new plan for date:', dateStr, 'with time:', timeInfo);
             openPlanModal(null, dateStr, timeInfo);
+        } else if (action === 'add-changed-task') {
+            console.log('Creating changed task for date:', dateStr, 'with time:', timeInfo);
+            openChangedTaskModal(dateStr, timeInfo);
         }
         
         menu.remove();
@@ -1317,6 +1358,222 @@ function adjustWeekendDisplay(events) {
     console.log('=== Weekend Display Adjustment Complete ===');
 }
 
+
+// 변동업무 모달 열기
+function openChangedTaskModal(dateStr, timeInfo = null) {
+    console.log('Opening changed task modal for date:', dateStr, 'timeInfo:', timeInfo);
+    
+    // 날짜 설정 (기본값을 클릭한 날짜로, 하지만 사용자가 변경 가능)
+    document.getElementById('changedTaskDate').value = dateStr;
+    document.getElementById('changedTaskDateInput').value = dateStr;
+    
+    // 폼 초기화
+    document.getElementById('changedTaskForm').reset();
+    // 날짜는 폼 리셋 후에 다시 설정
+    document.getElementById('changedTaskDateInput').value = dateStr;
+    document.getElementById('changedTaskTitle').value = '';
+    document.getElementById('changedTaskDescription').value = '';
+    document.getElementById('changedTaskDoContent').value = '';
+    document.getElementById('changedTaskCheckContent').value = '';
+    document.getElementById('changedTaskActionContent').value = '';
+    
+    // 시간 설정 (현재 시간을 기본값으로)
+    const now = new Date();
+    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    
+    if (timeInfo) {
+        // 클릭한 시간 정보가 있으면 사용
+        const clickedTime = `${timeInfo.hour.toString().padStart(2, '0')}:${timeInfo.minute.toString().padStart(2, '0')}`;
+        document.getElementById('changedTaskStartTime').value = clickedTime;
+        // 종료 시간은 시작 시간 + 1시간으로 설정
+        const endHour = (timeInfo.hour + 1) % 24;
+        document.getElementById('changedTaskEndTime').value = `${endHour.toString().padStart(2, '0')}:${timeInfo.minute.toString().padStart(2, '0')}`;
+    } else {
+        // 현재 시간으로 설정
+        document.getElementById('changedTaskStartTime').value = currentTime;
+        document.getElementById('changedTaskEndTime').value = currentTime;
+    }
+    
+    // 외근 체크박스 이벤트 설정
+    const isFieldWorkCheckbox = document.getElementById('changedTaskIsFieldWork');
+    const locationInput = document.getElementById('changedTaskLocation');
+    
+    isFieldWorkCheckbox.addEventListener('change', function() {
+        locationInput.disabled = !this.checked;
+        if (!this.checked) {
+            locationInput.value = '';
+        }
+    });
+    
+    // 빠른 시간 설정 버튼 이벤트
+    setupChangedTaskTimeButtons();
+    
+    // 모달 표시
+    const modal = new bootstrap.Modal(document.getElementById('changedTaskModal'));
+    modal.show();
+}
+
+// 변동업무 시간 설정 버튼 이벤트
+function setupChangedTaskTimeButtons() {
+    // 오전 버튼 (9:00-11:30)
+    document.getElementById('changedTaskMorningBtn').addEventListener('click', function() {
+        document.getElementById('changedTaskStartTime').value = '09:00';
+        document.getElementById('changedTaskEndTime').value = '11:30';
+    });
+    
+    // 오후 버튼 (12:30-17:00)
+    document.getElementById('changedTaskAfternoonBtn').addEventListener('click', function() {
+        document.getElementById('changedTaskStartTime').value = '12:30';
+        document.getElementById('changedTaskEndTime').value = '17:00';
+    });
+    
+    // 종일 버튼 (9:00-17:00)
+    document.getElementById('changedTaskAllDayBtn').addEventListener('click', function() {
+        document.getElementById('changedTaskStartTime').value = '09:00';
+        document.getElementById('changedTaskEndTime').value = '17:00';
+    });
+}
+
+// 변동업무 저장
+async function saveChangedTask() {
+    const changedTaskData = {
+        type: 'daily', // 일별 계획으로 저장하되 변동업무 카테고리
+        title: document.getElementById('changedTaskTitle').value,
+        description: document.getElementById('changedTaskDescription').value,
+        plan_date: document.getElementById('changedTaskDateInput').value,
+        start_time: null, // 변동업무는 계획 시간이 없음
+        end_time: null,
+        actual_start_time: document.getElementById('changedTaskStartTime').value,
+        actual_end_time: document.getElementById('changedTaskEndTime').value,
+        work_type: document.getElementById('changedTaskIsFieldWork').checked ? 'field' : 'office',
+        location: document.getElementById('changedTaskIsFieldWork').checked ? document.getElementById('changedTaskLocation').value : null,
+        status: 'completed', // 변동업무는 항상 완료 상태
+        special_event_type: null,
+        // 변동업무 식별을 위한 플래그 (description에 특수 마커 추가)
+        is_changed_task: true
+    };
+    
+    // 유효성 검사
+    if (!changedTaskData.title.trim()) {
+        Utils.showError('변동 업무명을 입력해주세요.');
+        return;
+    }
+    
+    if (!changedTaskData.actual_start_time || !changedTaskData.actual_end_time) {
+        Utils.showError('실제 수행 시간을 입력해주세요.');
+        return;
+    }
+    
+    // 시간 유효성 검사
+    if (changedTaskData.actual_start_time >= changedTaskData.actual_end_time) {
+        Utils.showError('종료 시간은 시작 시간보다 늦어야 합니다.');
+        return;
+    }
+    
+    try {
+        // PDCA 기록 추가
+        const pdcaData = {
+            do_content: document.getElementById('changedTaskDoContent').value || '변동업무로 처리 완료',
+            check_content: document.getElementById('changedTaskCheckContent').value || '',
+            action_content: document.getElementById('changedTaskActionContent').value || ''
+        };
+        
+        console.log('Saving changed task:', changedTaskData);
+        
+        // 1단계: 겹치는 계획 찾기 및 취소 처리
+        const conflictingPlans = await findConflictingPlans(
+            changedTaskData.plan_date, 
+            changedTaskData.actual_start_time, 
+            changedTaskData.actual_end_time
+        );
+        
+        if (conflictingPlans.length > 0) {
+            console.log('Found conflicting plans:', conflictingPlans);
+            await cancelConflictingPlans(conflictingPlans);
+        }
+        
+        // 2단계: 변동업무 저장
+        const result = await API.plans.create(changedTaskData);
+        
+        if (result.success) {
+            // PDCA 기록 저장
+            if (pdcaData.do_content) {
+                await API.pdca.createOrUpdate(result.plan.id, pdcaData);
+            }
+            
+            Utils.showSuccess('변동업무가 저장되었습니다.');
+            
+            // 모달 닫기
+            const modal = bootstrap.Modal.getInstance(document.getElementById('changedTaskModal'));
+            modal.hide();
+            
+            // 캘린더 새로고침
+            calendar.refetchEvents();
+        } else {
+            Utils.showError(result.error || '변동업무 저장에 실패했습니다.');
+        }
+        
+    } catch (error) {
+        console.error('변동업무 저장 실패:', error);
+        Utils.showError('변동업무 저장에 실패했습니다.');
+    }
+}
+
+// 겹치는 계획 찾기
+async function findConflictingPlans(date, startTime, endTime) {
+    try {
+        const result = await API.plans.getAll({
+            date: date,
+            type: 'daily'
+        });
+        
+        if (!result.success) {
+            return [];
+        }
+        
+        const conflicts = result.plans.filter(plan => {
+            // 이미 취소된 계획은 제외
+            if (plan.status === 'cancelled') {
+                return false;
+            }
+            
+            // 시간이 설정되지 않은 계획은 제외
+            if (!plan.start_time || !plan.end_time) {
+                return false;
+            }
+            
+            // 시간 겹침 검사
+            const planStart = plan.start_time;
+            const planEnd = plan.end_time;
+            
+            // 시간 비교 (HH:MM 형식)
+            return (startTime < planEnd && endTime > planStart);
+        });
+        
+        return conflicts;
+        
+    } catch (error) {
+        console.error('충돌하는 계획 검색 실패:', error);
+        return [];
+    }
+}
+
+// 충돌하는 계획들을 취소 상태로 변경
+async function cancelConflictingPlans(conflictingPlans) {
+    const cancelPromises = conflictingPlans.map(async (plan) => {
+        try {
+            await API.plans.update(plan.id, { status: 'cancelled' });
+            console.log(`Plan ${plan.id} (${plan.title}) cancelled due to changed task conflict`);
+        } catch (error) {
+            console.error(`Failed to cancel plan ${plan.id}:`, error);
+        }
+    });
+    
+    await Promise.all(cancelPromises);
+    
+    const planTitles = conflictingPlans.map(p => p.title).join(', ');
+    Utils.showInfo(`충돌하는 계획 ${conflictingPlans.length}개가 자동으로 취소되었습니다: ${planTitles}`);
+}
 
 // 날짜 더블클릭 처리 (일별 계획 생성/편집)
 async function handleDateDoubleClick(dateStr, forceNew = false, timeInfo = null) {

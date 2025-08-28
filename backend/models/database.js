@@ -92,6 +92,15 @@ function createTables(db) {
         }
       });
 
+      // 변동업무 구분을 위한 컬럼 추가 (마이그레이션)
+      db.run(`
+        ALTER TABLE plans ADD COLUMN is_changed_task BOOLEAN DEFAULT FALSE
+      `, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+          console.error('변동업무 컬럼 추가 실패:', err.message);
+        }
+      });
+
       // PDCA Records 테이블 생성
       db.run(`
         CREATE TABLE IF NOT EXISTS pdca_records (

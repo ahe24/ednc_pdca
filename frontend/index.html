@@ -333,6 +333,114 @@
         </div>
     </div>
 
+    <!-- 변동업무 추가 모달 -->
+    <div class="modal fade" id="changedTaskModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">변동업무 추가</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="changedTaskForm">
+                        <input type="hidden" id="changedTaskDate">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="changedTaskDateInput" class="form-label">날짜</label>
+                                <input type="date" class="form-control" id="changedTaskDateInput" required>
+                                <div class="form-text">변동업무가 발생한 날짜를 선택하세요</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="changedTaskTitle" class="form-label">변동 업무명</label>
+                                <input type="text" class="form-control" id="changedTaskTitle" required placeholder="갑작스럽게 발생한 업무를 입력하세요">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="changedTaskDescription" class="form-label">업무 상세(옵션)</label>
+                            <textarea class="form-control" id="changedTaskDescription" rows="3" placeholder="변동업무의 상세 내용을 기록하세요.&#10;&#10;예시:&#10;- 긴급 고객 문의 대응&#10;- 시스템 장애 복구&#10;- 임시 회의 참석"></textarea>
+                        </div>
+
+                        <!-- 실제 수행 시간 -->
+                        <div class="mb-3">
+                            <h6 class="text-primary mb-2">⏰ 실제 수행 시간</h6>
+                            <div class="mb-2 d-flex align-items-center gap-2">
+                                <label class="form-label mb-0">빠른 설정</label>
+                                <div class="btn-group btn-group-sm" role="group" aria-label="시간 프리셋">
+                                    <button type="button" class="btn btn-outline-primary" id="changedTaskMorningBtn" 
+                                            title="오전: 9:00-11:30">오전</button>
+                                    <button type="button" class="btn btn-outline-primary" id="changedTaskAfternoonBtn" 
+                                            title="오후: 12:30-17:00">오후</button>
+                                    <button type="button" class="btn btn-outline-success" id="changedTaskAllDayBtn" 
+                                            title="종일: 9:00-17:00">종일</button>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="changedTaskStartTime" class="form-label">실제 시작 시간</label>
+                                    <input type="time" class="form-control" id="changedTaskStartTime" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="changedTaskEndTime" class="form-label">실제 종료 시간</label>
+                                    <input type="time" class="form-control" id="changedTaskEndTime" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="changedTaskStatus" class="form-label">상태</label>
+                                <select class="form-control" id="changedTaskStatus">
+                                    <option value="completed" selected>완료</option>
+                                </select>
+                                <div class="form-text">변동업무는 이미 완료된 업무로 기록됩니다.</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="row">
+                                    <div class="col-4">
+                                        <div class="form-check mt-4">
+                                            <input class="form-check-input" type="checkbox" id="changedTaskIsFieldWork">
+                                            <label class="form-check-label" for="changedTaskIsFieldWork">
+                                                외근
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-8">
+                                        <label for="changedTaskLocation" class="form-label">위치</label>
+                                        <input type="text" class="form-control" id="changedTaskLocation" placeholder="외근 시 위치를 입력하세요" disabled>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PDCA 섹션 (변동업무용) -->
+                        <div class="mt-4">
+                            <h6>변동업무 PDCA 기록</h6>
+                            <div class="mb-3">
+                                <label for="changedTaskDoContent" class="form-label">실행 (Do)</label>
+                                <textarea class="form-control" id="changedTaskDoContent" rows="2" placeholder="변동업무로 수행한 작업 내용을 기록하세요.&#10;&#10;예시:&#10;- 고객 긴급 문의 대응&#10;- 시스템 장애 복구 작업&#10;- 예상치 못한 회의 참석"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="changedTaskCheckContent" class="form-label">점검 (Check)</label>
+                                <textarea class="form-control" id="changedTaskCheckContent" rows="2" placeholder="수행 결과 및 문제점을 기록하세요.&#10;&#10;예시:&#10;- 고객 문제 완전 해결됨&#10;- 시스템 정상 복구, 재발 방지 필요&#10;- 회의 결과 새로운 업무 할당됨"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="changedTaskActionContent" class="form-label">조치 (Action)</label>
+                                <textarea class="form-control" id="changedTaskActionContent" rows="2" placeholder="향후 개선사항이나 후속 조치를 기록하세요.&#10;&#10;예시:&#10;- 유사 문의 대응 매뉴얼 업데이트 필요&#10;- 시스템 모니터링 강화&#10;- 회의 결과 관련 업무 계획 수립"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">취소</button>
+                    <button type="button" class="btn btn-primary" id="saveChangedTaskBtn">저장</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 프로필 모달 -->
     <div class="modal fade" id="profileModal" tabindex="-1">
         <div class="modal-dialog">

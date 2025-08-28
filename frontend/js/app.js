@@ -105,6 +105,12 @@ function setupEventListeners() {
         savePlanBtn.addEventListener('click', savePlan);
     }
     
+    // 변동업무 저장 버튼
+    const saveChangedTaskBtn = document.getElementById('saveChangedTaskBtn');
+    if (saveChangedTaskBtn) {
+        saveChangedTaskBtn.addEventListener('click', saveChangedTask);
+    }
+    
     // 계획 삭제 버튼
     const deletePlanBtn = document.getElementById('deletePlanBtn');
     if (deletePlanBtn) {
