@@ -499,9 +499,23 @@
                                         </button>
                                     </div>
                                 </div>
+                                <!-- 팀/멤버 선택 (관리자/매니저만) -->
+                                <div class="no-print me-3" id="memberSelectionContainer" style="display: none;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <select class="form-select form-select-sm" id="teamSelect" style="width: auto;">
+                                            <option value="">팀 선택...</option>
+                                        </select>
+                                        <select class="form-select form-select-sm" id="memberSelect" style="width: auto;" disabled>
+                                            <option value="">멤버 선택...</option>
+                                        </select>
+                                    </div>
+                                </div>
                                 <div>
                                     <h4 class="mb-0">주간 보고서</h4>
                                     <small class="text-muted" id="reportDateRange">2024년 1월 1일 - 1월 7일</small>
+                                    <div class="no-print">
+                                        <small class="text-info" id="viewingUserInfo" style="display: none;"></small>
+                                    </div>
                                 </div>
                             </div>
                             <div class="no-print">

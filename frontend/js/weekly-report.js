@@ -3,6 +3,8 @@
 let reportData = null;
 let showWeekend = true;
 let currentWeekDate = null; // 현재 보고 있는 주의 월요일 날짜
+let selectedUserId = null; // 선택된 사용자 ID (null이면 본인)
+let currentUser = null; // 현재 로그인된 사용자 정보
 
 // 초기화
 document.addEventListener('DOMContentLoaded', async function() {
@@ -13,6 +15,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             window.location.href = '/login.html';
             return;
         }
+        currentUser = Auth.getCurrentUser();
+        console.log('🔐 Current user loaded:', currentUser);
     } catch (error) {
         console.error('Authentication failed:', error);
         window.location.href = '/login.html';
@@ -27,6 +31,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
+    // 팀/멤버 선택 기능 초기화
+    initializeMemberSelection();
+
     // 초기 데이터 로드 (현재 주)
     currentWeekDate = getCurrentMonday();
     
@@ -35,6 +42,113 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     loadReportData();
 });
+
+// 팀/멤버 선택 기능 초기화
+async function initializeMemberSelection() {
+    const memberSelectionContainer = document.getElementById('memberSelectionContainer');
+    const teamSelect = document.getElementById('teamSelect');
+    const memberSelect = document.getElementById('memberSelect');
+
+    // 모든 사용자가 다른 멤버의 보고서를 볼 수 있음 (추후 권한 제한 예정)
+    console.log('👤 Checking user role:', currentUser?.role);
+    if (currentUser) {
+        console.log('✅ User logged in, showing member selection');
+        memberSelectionContainer.style.display = 'block';
+        
+        // 팀 목록 로드
+        await loadTeams();
+        
+        // 팀 선택 이벤트
+        teamSelect.addEventListener('change', async function() {
+            const teamId = this.value;
+            memberSelect.innerHTML = '<option value="">멤버 선택...</option>';
+            memberSelect.disabled = !teamId;
+            
+            if (teamId) {
+                await loadTeamMembers(teamId);
+            }
+            
+            // 팀 변경시 선택 초기화
+            selectedUserId = null;
+            updateViewingUserInfo();
+            loadReportData();
+        });
+        
+        // 멤버 선택 이벤트
+        memberSelect.addEventListener('change', function() {
+            const userId = this.value;
+            selectedUserId = userId || null;
+            updateViewingUserInfo();
+            loadReportData();
+        });
+    } else {
+        console.log('❌ User does not have permission to view other members reports');
+    }
+}
+
+// 팀 목록 로드
+async function loadTeams() {
+    try {
+        const response = await API.teams.getAll();
+        const teamSelect = document.getElementById('teamSelect');
+        
+        response.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            teamSelect.appendChild(option);
+        });
+        
+        // 현재는 모든 팀을 볼 수 있음 (추후 권한 제한 예정)
+        // 관리자가 아닌 경우 자신의 팀을 기본 선택 (하지만 다른 팀도 선택 가능)
+        if (currentUser.team_id) {
+            teamSelect.value = currentUser.team_id;
+            await loadTeamMembers(currentUser.team_id);
+        }
+    } catch (error) {
+        console.error('Failed to load teams:', error);
+        Utils.showError('팀 목록을 불러오는데 실패했습니다.');
+    }
+}
+
+// 팀 멤버 로드
+async function loadTeamMembers(teamId) {
+    try {
+        const response = await API.teams.getMembers(teamId);
+        const memberSelect = document.getElementById('memberSelect');
+        
+        // 기존 옵션 제거 (첫 번째 옵션 제외)
+        memberSelect.innerHTML = '<option value="">전체 멤버 보고서</option>';
+        
+        response.members.forEach(member => {
+            const option = document.createElement('option');
+            option.value = member.id;
+            option.textContent = `${member.name} (${Utils.getStatusText(member.role)})`;
+            memberSelect.appendChild(option);
+        });
+        
+        memberSelect.disabled = false;
+    } catch (error) {
+        console.error('Failed to load team members:', error);
+        Utils.showError('팀 멤버를 불러오는데 실패했습니다.');
+    }
+}
+
+// 현재 조회중인 사용자 정보 업데이트
+function updateViewingUserInfo() {
+    const viewingUserInfo = document.getElementById('viewingUserInfo');
+    const memberSelect = document.getElementById('memberSelect');
+    
+    if (selectedUserId && memberSelect) {
+        const selectedOption = memberSelect.querySelector(`option[value="${selectedUserId}"]`);
+        if (selectedOption) {
+            viewingUserInfo.textContent = `📊 ${selectedOption.textContent}의 보고서를 조회 중`;
+            viewingUserInfo.style.display = 'block';
+        }
+    } else {
+        viewingUserInfo.style.display = 'none';
+    }
+}
 
 // 현재 주의 월요일 날짜 계산 (calendar.js와 완전히 동일한 로직)
 function getCurrentMonday() {
@@ -162,7 +276,13 @@ async function loadReportData() {
         const monday = currentWeekDate || getCurrentMonday();
         console.log('📊 Loading report data for Monday:', monday);
         
-        const response = await API.request(`/api/plans/report/weekly?date=${monday}`);
+        // 선택된 사용자가 있으면 user_id 파라미터 추가
+        let url = `/api/plans/report/weekly?date=${monday}`;
+        if (selectedUserId) {
+            url += `&user_id=${selectedUserId}`;
+        }
+        
+        const response = await API.request(url);
         
         if (response.success) {
             reportData = response.data;
@@ -175,7 +295,7 @@ async function loadReportData() {
         }
     } catch (error) {
         console.error('Report data loading error:', error);
-        API.showError('보고서 데이터를 불러오는데 실패했습니다.');
+        Utils.showError('보고서 데이터를 불러오는데 실패했습니다.');
     }
 }
 

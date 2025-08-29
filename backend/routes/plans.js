@@ -385,12 +385,33 @@ router.get('/:id/pdca', (req, res) => {
 });
 
 // 주간 보고서 데이터 조회
-router.get('/report/weekly', (req, res) => {
-  const { date } = req.query; // YYYY-MM-DD 형식의 주 시작일
-  const userId = req.user.id;
+router.get('/report/weekly', async (req, res) => {
+  const { date, user_id } = req.query; // YYYY-MM-DD 형식의 주 시작일, user_id는 선택적
+  const targetUserId = user_id || req.user.id; // user_id가 제공되면 해당 사용자, 아니면 본인
   
   if (!date) {
     return res.status(400).json({ error: '날짜 파라미터가 필요합니다.' });
+  }
+
+  // 권한 확인: 다른 사용자의 보고서를 조회하는 경우
+  if (user_id && user_id !== req.user.id.toString()) {
+    const db = getDatabase();
+    
+    // 조회할 사용자 정보 가져오기
+    const targetUser = await new Promise((resolve, reject) => {
+      db.get('SELECT id, team_id FROM users WHERE id = ?', [targetUserId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+
+    if (!targetUser) {
+      return res.status(404).json({ error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    // 현재는 모든 사용자가 다른 멤버의 보고서를 볼 수 있음 (추후 권한 제한 예정)
+    // 접근 권한 확인 - 현재는 모두 허용
+    // TODO: 추후 권한 제한 로직 구현
   }
 
   const db = getDatabase();
@@ -480,31 +501,31 @@ router.get('/report/weekly', (req, res) => {
   // 모든 쿼리 실행
   Promise.all([
     new Promise((resolve, reject) => {
-      db.all(thisWeekQuery, [userId, mondayStr, sundayStr], (err, rows) => {
+      db.all(thisWeekQuery, [targetUserId, mondayStr, sundayStr], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
     }),
     new Promise((resolve, reject) => {
-      db.all(nextWeekQuery, [userId, nextMondayStr, nextSundayStr], (err, rows) => {
+      db.all(nextWeekQuery, [targetUserId, nextMondayStr, nextSundayStr], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
     }),
     new Promise((resolve, reject) => {
-      db.all(monthlyQuery, [userId, currentMonth], (err, rows) => {
+      db.all(monthlyQuery, [targetUserId, currentMonth], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
     }),
     new Promise((resolve, reject) => {
-      db.all(weeklyQuery, [userId, mondayStr, sundayStr], (err, rows) => {
+      db.all(weeklyQuery, [targetUserId, mondayStr, sundayStr], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
     }),
     new Promise((resolve, reject) => {
-      db.all(nextWeeklyQuery, [userId, nextMondayStr, nextSundayStr], (err, rows) => {
+      db.all(nextWeeklyQuery, [targetUserId, nextMondayStr, nextSundayStr], (err, rows) => {
         if (err) reject(err);
         else resolve(rows);
       });
