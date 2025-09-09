@@ -24,14 +24,11 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/">내 캘린더</a>
                     </li>
-                    <li class="nav-item">
+                    <li class="nav-item" id="teamNavItem">
                         <a class="nav-link active" href="/team-calendar.html">팀 캘린더</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="/weekly-report.html">주간 보고서</a>
-                    </li>
-                    <li class="nav-item d-none" id="allNavItem">
-                        <a class="nav-link" href="#" data-view="all">전체 캘린더</a>
                     </li>
                 </ul>
                 
@@ -63,15 +60,23 @@
     </nav>
 
     <div class="container-fluid mt-4">
-        <!-- 팀원 선택 필터 -->
+        <!-- 팀/팀원 선택 필터 -->
         <div class="row mb-3">
             <div class="col-12">
                 <div class="card">
                     <div class="card-body py-3">
                         <div class="d-flex align-items-center gap-3 flex-wrap">
-                            <label for="teamMemberSelect" class="form-label mb-0 fw-semibold">팀원 선택:</label>
-                            <div class="flex-fill" style="max-width: 300px;">
-                                <select class="form-select" id="teamMemberSelect">
+                            <!-- 팀 선택 (관리자만) -->
+                            <div class="d-none d-flex align-items-center gap-2" id="teamSelectionContainer">
+                                <label for="teamSelect" class="form-label mb-0 fw-semibold text-nowrap">팀 선택:</label>
+                                <select class="form-select" id="teamSelect" style="width: 200px;">
+                                    <option value="">팀을 선택하세요</option>
+                                </select>
+                            </div>
+                            <!-- 팀원 선택 -->
+                            <div class="d-flex align-items-center gap-2">
+                                <label for="teamMemberSelect" class="form-label mb-0 fw-semibold text-nowrap">팀원 선택:</label>
+                                <select class="form-select" id="teamMemberSelect" style="width: 300px;">
                                     <option value="">팀원을 선택하세요</option>
                                 </select>
                             </div>
