@@ -38,7 +38,6 @@ const Auth = {
             const result = await API.post('/api/auth/login', credentials);
 
             if (result.success) {
-                console.log('Login successful:', result.user);
                 Auth.currentUser = result.user;
                 localStorage.setItem('user', JSON.stringify(result.user));
                 
@@ -77,11 +76,9 @@ const Auth = {
     // 현재 사용자 정보 로드
     async loadCurrentUser() {
         try {
-            console.log('Loading current user...');
             // 서버에서 최신 정보 확인
             const result = await API.get('/api/auth/me');
             if (result.success) {
-                console.log('User authenticated:', result.user);
                 this.currentUser = result.user;
                 localStorage.setItem('user', JSON.stringify(result.user));
                 return this.currentUser;
@@ -91,7 +88,6 @@ const Auth = {
             throw new Error('인증이 필요합니다.');
             
         } catch (error) {
-            console.log('Authentication failed:', error.message);
             // 인증 오류가 아닌 경우에만 로그 출력
             if (!error.message.includes('로그인이 필요합니다') && !error.message.includes('유효하지 않은 토큰')) {
                 console.error('사용자 정보 로드 실패:', error);
@@ -102,7 +98,6 @@ const Auth = {
             // 로그인 페이지, 회원가입 페이지가 아닌 경우에만 리다이렉트
             if (!window.location.pathname.includes('login.html') && 
                 !window.location.pathname.includes('register.html')) {
-                console.log('Redirecting to login page...');
                 window.location.href = '/login.html';
             }
             return null;
@@ -250,20 +245,26 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             // 권한별 메뉴 표시
-            // 팀이 있는 모든 사용자에게 팀 캘린더 메뉴 표시
-            if (Auth.currentUser.team_id) {
-                const teamNavItem = document.getElementById('teamNavItem');
-                if (teamNavItem) {
+            const teamNavItem = document.getElementById('teamNavItem');
+            if (teamNavItem) {
+                if (Auth.isAdmin()) {
+                    // 관리자: "전체 캘린더" 텍스트로 표시
+                    const teamNavLink = teamNavItem.querySelector('a');
+                    if (teamNavLink) {
+                        teamNavLink.textContent = '전체 캘린더';
+                    }
+                    teamNavItem.classList.remove('d-none');
+                } else if (Auth.currentUser.team_id) {
+                    // 일반 사용자: "팀 캘린더" 텍스트로 표시 (팀이 있는 경우만)
+                    const teamNavLink = teamNavItem.querySelector('a');
+                    if (teamNavLink) {
+                        teamNavLink.textContent = '팀 캘린더';
+                    }
                     teamNavItem.classList.remove('d-none');
                 }
             }
 
             if (Auth.isAdmin()) {
-                const allNavItem = document.getElementById('allNavItem');
-                if (allNavItem) {
-                    allNavItem.classList.remove('d-none');
-                }
-                
                 // 관리자 메뉴 표시
                 const adminMenuItem = document.getElementById('adminMenuItem');
                 if (adminMenuItem) {

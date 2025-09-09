@@ -99,11 +99,24 @@ async function loadTeams() {
             teamSelect.appendChild(option);
         });
         
-        // 현재는 모든 팀을 볼 수 있음 (추후 권한 제한 예정)
-        // 관리자가 아닌 경우 자신의 팀을 기본 선택 (하지만 다른 팀도 선택 가능)
-        if (currentUser.team_id) {
-            teamSelect.value = currentUser.team_id;
-            await loadTeamMembers(currentUser.team_id);
+        // 관리자는 모든 팀에 접근 가능, 일반 사용자는 자신의 팀만 접근 가능
+        if (Auth.isAdmin()) {
+            // 관리자인 경우 모든 팀 표시 (기본 선택 없음)
+            console.log('👑 Admin user - can access all teams');
+        } else {
+            // 일반 사용자인 경우 자신의 팀만 표시하고 기본 선택
+            if (currentUser.team_id) {
+                // 자신의 팀이 아닌 옵션들 제거
+                const options = Array.from(teamSelect.options);
+                options.forEach(option => {
+                    if (option.value && option.value !== currentUser.team_id.toString()) {
+                        option.remove();
+                    }
+                });
+                
+                teamSelect.value = currentUser.team_id;
+                await loadTeamMembers(currentUser.team_id);
+            }
         }
     } catch (error) {
         console.error('Failed to load teams:', error);
@@ -118,7 +131,7 @@ async function loadTeamMembers(teamId) {
         const memberSelect = document.getElementById('memberSelect');
         
         // 기존 옵션 제거 (첫 번째 옵션 제외)
-        memberSelect.innerHTML = '<option value="">전체 멤버 보고서</option>';
+        memberSelect.innerHTML = '<option value="">팀원을 선택하세요</option>';
         
         response.members.forEach(member => {
             const option = document.createElement('option');

@@ -27,7 +27,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         user = Auth.getCurrentUser();
-        if (!user || !user.team_id) {
+        if (!user) {
+            Utils.showError('사용자 정보를 불러올 수 없습니다.');
+            setTimeout(() => {
+                window.location.href = '/login.html';
+            }, 2000);
+            return;
+        }
+        
+        // 관리자가 아니면서 팀에 소속되어 있지 않은 경우 접근 금지
+        if (!Auth.isAdmin() && !user.team_id) {
             Utils.showError('팀에 소속되어 있지 않습니다.');
             setTimeout(() => {
                 window.location.href = '/';
@@ -47,28 +56,42 @@ document.addEventListener('DOMContentLoaded', async function() {
     // 이벤트 리스너 설정
     setupEventListeners();
 
-    // 팀 멤버 목록 로드
-    await loadTeamMembers();
-
-    // 기본적으로 본인 계정 선택 (캘린더 초기화 전에)
-    const memberSelect = document.getElementById('teamMemberSelect');
-    memberSelect.value = user.id;
-    selectedMemberId = user.id;
-    
-    // 선택된 멤버 이름 설정
-    const selectedOption = memberSelect.options[memberSelect.selectedIndex];
-    if (selectedOption) {
-        selectedMemberName = selectedOption.textContent;
+    if (Auth.isAdmin()) {
+        // 관리자인 경우: 팀 선택 UI 표시 및 팀 목록 로드
+        document.getElementById('teamSelectionContainer').classList.remove('d-none');
+        await loadTeamsForAdmin();
+    } else {
+        // 일반 사용자인 경우: 자신의 팀 멤버만 로드
+        await loadTeamMembers();
+        
+        // 기본적으로 본인 계정 선택 (캘린더 초기화 전에)
+        const memberSelect = document.getElementById('teamMemberSelect');
+        memberSelect.value = user.id;
+        selectedMemberId = user.id;
+        
+        // 선택된 멤버 이름 설정
+        const selectedOption = memberSelect.options[memberSelect.selectedIndex];
+        if (selectedOption) {
+            selectedMemberName = selectedOption.textContent;
+        }
+        
+        // 팀원 선택 처리 및 표시 업데이트 (현재 날짜 계획도 자동 로드됨)
+        await handleMemberSelection();
     }
 
-    // 캘린더 초기화 (멤버 선택 후)
+    // 캘린더 초기화
     initializeTeamCalendar();
+    
+    // 캘린더 초기화 후 편집 권한 설정 (일반 사용자의 경우)
+    if (!Auth.isAdmin() && selectedMemberId) {
+        const isOwnAccount = selectedMemberId === Auth.getCurrentUser().id;
+        if (teamCalendar) {
+            teamCalendar.setOption('editable', isOwnAccount);
+        }
+    }
     
     // 검색 기능 초기화
     initializeSearch();
-
-    // 팀원 선택 처리 및 표시 업데이트 (현재 날짜 계획도 자동 로드됨)
-    await handleMemberSelection();
     
     // URL 파라미터 처리 (검색에서 넘어온 경우)
     handleUrlParameters();
@@ -111,6 +134,12 @@ function handleUrlParameters() {
 
 // 이벤트 리스너 설정
 function setupEventListeners() {
+    // 팀 선택 변경 (관리자용)
+    const teamSelect = document.getElementById('teamSelect');
+    if (teamSelect) {
+        teamSelect.addEventListener('change', handleTeamSelection);
+    }
+    
     // 팀 멤버 선택 변경
     document.getElementById('teamMemberSelect').addEventListener('change', handleMemberSelection);
     
@@ -119,7 +148,6 @@ function setupEventListeners() {
     if (hideWeekendsCheckbox) {
         hideWeekendsCheckbox.addEventListener('change', function() {
             hideEmptyWeekends = this.checked;
-            console.log(`Team calendar weekend hiding setting changed: ${hideEmptyWeekends}`);
             // 캘린더 새로고침하여 설정 적용
             if (teamCalendar) {
                 teamCalendar.refetchEvents();
@@ -148,6 +176,68 @@ function setupEventListeners() {
     // 관리자 메뉴 표시
     if (Auth.isAdmin()) {
         document.getElementById('adminMenuItem').classList.remove('d-none');
+    }
+}
+
+// 관리자용 팀 목록 로드
+async function loadTeamsForAdmin() {
+    try {
+        const response = await API.teams.getAll();
+        const teamSelect = document.getElementById('teamSelect');
+        
+        // 기존 옵션 제거 (첫 번째 옵션 제외)
+        teamSelect.innerHTML = '<option value="">팀을 선택하세요</option>';
+        
+        response.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            teamSelect.appendChild(option);
+        });
+        
+    } catch (error) {
+        console.error('Failed to load teams for admin:', error);
+        Utils.showError('팀 목록을 불러오는데 실패했습니다.');
+    }
+}
+
+// 관리자용 팀 선택 처리
+async function handleTeamSelection() {
+    const teamSelect = document.getElementById('teamSelect');
+    const memberSelect = document.getElementById('teamMemberSelect');
+    const teamId = teamSelect.value;
+    
+    // 멤버 선택 초기화
+    memberSelect.innerHTML = '<option value="">팀원을 선택하세요</option>';
+    memberSelect.disabled = !teamId;
+    selectedMemberId = null;
+    selectedMemberName = '';
+    
+    if (teamId) {
+        // 선택된 팀의 멤버들 로드
+        try {
+            const response = await API.teams.getMembers(teamId);
+            
+            response.members.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member.id;
+                option.textContent = `${member.name} (${Utils.getStatusText(member.role)})`;
+                memberSelect.appendChild(option);
+            });
+            
+            memberSelect.disabled = false;
+        } catch (error) {
+            console.error('Failed to load team members:', error);
+            Utils.showError('팀 멤버를 불러오는데 실패했습니다.');
+        }
+    }
+    
+    // 선택 상태 업데이트
+    updateSelectedMemberDisplay();
+    
+    // 캘린더 새로고침
+    if (teamCalendar) {
+        teamCalendar.refetchEvents();
     }
 }
 
@@ -187,8 +277,6 @@ async function handleMemberSelection() {
     const memberSelect = document.getElementById('teamMemberSelect');
     selectedMemberId = memberSelect.value;
     
-    console.log('Member selection changed to:', selectedMemberId);
-    
     if (!selectedMemberId) {
         selectedMemberName = '';
         updateSelectedMemberDisplay();
@@ -200,16 +288,14 @@ async function handleMemberSelection() {
     const selectedOption = memberSelect.options[memberSelect.selectedIndex];
     selectedMemberName = selectedOption.textContent;
     
-    console.log('Selected member name:', selectedMemberName);
-    
     // 선택된 멤버 정보 표시
     updateSelectedMemberDisplay();
     
     // 편집 권한 업데이트 (본인 선택시에만 편집 가능)
     const isOwnAccount = selectedMemberId === Auth.getCurrentUser().id;
-    teamCalendar.setOption('editable', isOwnAccount);
-    
-    console.log('Member selection - editable set to:', isOwnAccount);
+    if (teamCalendar) {
+        teamCalendar.setOption('editable', isOwnAccount);
+    }
     
     // 현재 날짜의 주별/월별 계획 로드
     const today = new Date().toISOString().split('T')[0];
@@ -433,9 +519,6 @@ function initializeTeamCalendar() {
         
         // 뷰 변경 시 이벤트 새로고침
         viewDidMount: function(info) {
-            console.log('=== TEAM CALENDAR VIEW CHANGED ===');
-            console.log('Team ViewDidMount info:', info);
-            
             // info 객체 안에 view가 있는지 확인
             let view = null;
             if (info && info.view) {
@@ -447,22 +530,16 @@ function initializeTeamCalendar() {
                 view = teamCalendar ? teamCalendar.view : null;
             }
             
-            console.log('Team calendar detected view:', view);
-            console.log('Team calendar view type:', view?.type || 'unknown');
-            
             if (!view || !view.type) {
-                console.log('ERROR: Could not determine team calendar view type!');
                 return;
             }
             
-            console.log(`Team calendar refetching events for view change to: ${view.type}`);
             // 뷰가 변경되면 이벤트를 다시 로드
             teamCalendar.refetchEvents();
             
             // 시간 뷰로 변경되면 약간의 지연 후 시간 범위 조정
             if (view.type.includes('timeGrid')) {
                 setTimeout(() => {
-                    console.log('Team calendar time grid view detected, triggering time range adjustment...');
                     const events = teamCalendar.getEvents();
                     if (events.length > 0) {
                         adjustTeamCalendarTimeRange(events);
@@ -498,11 +575,7 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
             filters.date = startMonth;
         }
         
-        console.log('Loading team calendar events for member:', selectedMemberId, filters);
-        console.log('API.plans.getAll filters:', JSON.stringify(filters));
-        
         const result = await API.plans.getAll(filters);
-        console.log('API result:', result);
         
         if (result.success) {
             const events = [];
@@ -513,11 +586,7 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                 
                 if (teamCalendar && teamCalendar.view && teamCalendar.view.type) {
                     currentView = teamCalendar.view.type;
-                } else {
-                    console.warn('Team calendar or view not available, using default dayGridMonth');
                 }
-                
-                console.log(`Team calendar processing plan ${plan.id} for view: ${currentView} (teamCalendar exists: ${!!teamCalendar})`);
                 
                 if (currentView === 'dayGridMonth') {
                     // 월별 뷰: 단일 이벤트 (시간 표시 없이 올데이 이벤트로)
@@ -563,9 +632,6 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                     
                 } else {
                     // 주별/일별 뷰: 듀얼 이벤트 (계획 + 실제)
-                    console.log(`Team calendar: Creating dual events for plan ${plan.id} (${plan.title})`);
-                    console.log(`  - Status: ${plan.status}`);
-                    console.log(`  - Has actual times: ${!!(plan.actual_start_time && plan.actual_end_time)}`);
                     
                     // 1. 계획 시간 이벤트
                     let plannedStartDateTime, plannedEndDateTime;
@@ -590,7 +656,6 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                     let plannedTitle, plannedClasses;
                     if (plan.is_changed_task) {
                         // 변동업무는 실제 시간만 표시 (계획 시간 이벤트 생성 안함)
-                        console.log(`  -> Team calendar: Skipping planned event for changed task ${plan.id}`);
                         // 아래에서 실제 시간 이벤트만 생성
                     } else if (plan.status === 'cancelled') {
                         plannedTitle = plan.title; // ❌ 제거 - eventDidMount에서 처리
@@ -625,12 +690,10 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                             classNames: plannedClasses
                         };
                         events.push(plannedEvent);
-                        console.log(`  -> Team calendar: Added planned event: planned-${plan.id}`);
                     }
                     
                     // 2. 실제 시간 이벤트
                     if (plan.actual_start_time && plan.actual_end_time) {
-                        console.log(`  -> Team calendar: Creating actual event for completed plan...`);
                         let actualStartDateTime, actualEndDateTime;
                         
                         const [year, month, day] = plan.plan_date.split('-').map(Number);
@@ -670,14 +733,10 @@ async function loadTeamCalendarEvents(fetchInfo, successCallback, failureCallbac
                             classNames: actualClasses
                         };
                         events.push(actualEvent);
-                        console.log(`  -> Team calendar: Added actual event: actual-${plan.id}`);
-                    } else {
-                        console.log(`  -> Team calendar: No actual times found, only showing planned event`);
                     }
                 }
             });
             
-            console.log('Sending team calendar events:', events);
             successCallback(events);
         } else {
             failureCallback(new Error('팀 멤버 계획을 불러오는데 실패했습니다.'));
@@ -819,23 +878,13 @@ async function showEventDetails(event) {
         // Fetch complete plan details including PDCA records
         const response = await API.plans.getById(planId);
         
-        console.log('Team calendar event details API response:', response);
-        
         if (!response.success || !response.plan) {
-            console.log('API failed or no plan data, falling back to basic details');
             // Fallback to basic event info if API fails
             showBasicEventDetails(event);
             return;
         }
         
         const plan = response.plan;
-        
-        console.log('Plan data:', plan);
-        console.log('PDCA data in plan:', {
-            do_content: plan.do_content,
-            check_content: plan.check_content,
-            action_content: plan.action_content
-        });
         
         // Use originalTitle for cancelled events to avoid duplicate ❌
         const displayTitle = props.status === 'cancelled' && props.originalTitle ? 
@@ -986,11 +1035,7 @@ function getStatusColor(status, useActualTime) {
         case 'cancelled': return 'rgba(108, 117, 125, 0.1)'; // 취소 = 매우 연한 회색
         case 'planned':
         default: 
-            if (useActualTime) {
-                return '#007bff';
-            } else {
-                return 'rgba(0, 123, 255, 0.15)';
-            }
+            return useActualTime ? '#007bff' : 'rgba(0, 123, 255, 0.15)';
     }
 }
 
@@ -1009,11 +1054,7 @@ function getStatusTextColor(status, useActualTime) {
         case 'cancelled': return '#6c757d'; // 취소 텍스트 = 회색
         case 'planned':
         default:
-            if (useActualTime) {
-                return '#ffffff';
-            } else {
-                return '#007bff';
-            }
+            return useActualTime ? '#ffffff' : '#007bff';
     }
 }
 
@@ -1135,31 +1176,19 @@ function formatSection(title, items) {
 
 // 팀 캘린더 시간 범위 동적 조정
 function adjustTeamCalendarTimeRange(events) {
-    console.log('=== Team Calendar Time Range Adjustment ===');
-    console.log('Current view:', teamCalendar.view.type);
-    console.log('Total events received:', events.length);
-    
     // 시간 뷰가 아니면 조정하지 않음
     const currentView = teamCalendar.view.type;
     if (!currentView.includes('timeGrid')) {
-        console.log('Not a time grid view, skipping');
         return;
     }
     
     // 시간이 있는 이벤트만 필터링
     const timedEvents = events.filter(event => {
         const hasTimes = event.start && !event.allDay;
-        console.log(`Event "${event.title}": allDay=${event.allDay}, start=${event.start}, end=${event.end}, hasTimes=${hasTimes}`);
-        if (hasTimes && event.start) {
-            console.log(`  -> Event start time: ${event.start.getHours()}:${event.start.getMinutes()}`);
-        }
         return hasTimes;
     });
     
-    console.log('Filtered timed events:', timedEvents.length);
-    
     if (timedEvents.length === 0) {
-        console.log('No timed events, using default range 06:00-20:00');
         teamCalendar.setOption('slotMinTime', '06:00:00');
         teamCalendar.setOption('slotMaxTime', '20:00:00');
         return;
@@ -1168,7 +1197,7 @@ function adjustTeamCalendarTimeRange(events) {
     let earliestHour = 23;
     let latestHour = 0;
     
-    timedEvents.forEach((event, index) => {
+    timedEvents.forEach(event => {
         // FullCalendar Date 객체에서 시간 추출
         const startHour = event.start.getHours();
         let endHour = event.end ? event.end.getHours() : startHour;
@@ -1177,20 +1206,14 @@ function adjustTeamCalendarTimeRange(events) {
         if (event.end && event.end.getDate() !== event.start.getDate()) {
             // 다음날로 넘어간 경우, 해당 날의 23:59까지만 고려
             endHour = 23;
-            console.log(`Event ${index} crosses midnight, adjusting end to 23:00`);
         }
-        
-        console.log(`Event ${index} "${event.title}": ${startHour}:${event.start.getMinutes()} - ${endHour}:${event.end ? event.end.getMinutes() : 'N/A'}`);
         
         if (startHour < earliestHour) earliestHour = startHour;
         if (endHour > latestHour) latestHour = endHour;
     });
     
-    console.log(`Found hour range: ${earliestHour}:00 - ${latestHour}:00`);
-    
     // 합리적인 시간 범위 보장
     if (earliestHour > latestHour) {
-        console.log('Invalid hour range detected, using default');
         earliestHour = 9;
         latestHour = 18;
     }
@@ -1203,49 +1226,33 @@ function adjustTeamCalendarTimeRange(events) {
     const newMinTime = `${adjustedStartHour.toString().padStart(2, '0')}:00:00`;
     const newMaxTime = `${adjustedEndHour.toString().padStart(2, '0')}:00:00`;
     
-    console.log(`Setting team calendar time range: ${newMinTime} - ${newMaxTime}`);
-    
     // Try setting options with a slight delay to ensure calendar is ready
     setTimeout(() => {
-        console.log('Applying team calendar time range options...');
         teamCalendar.setOption('slotMinTime', newMinTime);
         teamCalendar.setOption('slotMaxTime', newMaxTime);
         
-        // Verify the options were set
-        console.log('Team Calendar Verification - slotMinTime:', teamCalendar.getOption('slotMinTime'));
-        console.log('Team Calendar Verification - slotMaxTime:', teamCalendar.getOption('slotMaxTime'));
-        
         // Force calendar refresh
-        console.log('Forcing team calendar refresh');
         teamCalendar.render();
     }, 100);
-    
-    console.log('=== Team Calendar Time Range Adjustment Complete ===');
 }
 
 // 팀 캘린더 주말 표시 조정 함수
 function adjustTeamCalendarWeekendDisplay(events) {
-    console.log('=== Team Calendar Weekend Display Adjustment ===');
-    
     if (!hideEmptyWeekends) {
-        console.log('Team calendar auto-hide weekends disabled, showing all days');
         teamCalendar.setOption('weekends', true);
         return;
     }
     
     const currentViewType = teamCalendar.view.type;
-    console.log('Team calendar current view type:', currentViewType);
     
     // 월별 뷰에서는 주말 숨김 적용하지 않음
     if (currentViewType === 'dayGridMonth') {
-        console.log('Team calendar month view detected, keeping weekends visible');
         teamCalendar.setOption('weekends', true);
         return;
     }
     
     // 주별/일별 뷰에서만 적용
     if (!currentViewType.includes('timeGrid') && currentViewType !== 'listWeek') {
-        console.log('Team calendar not a week/day view, keeping weekends visible');
         teamCalendar.setOption('weekends', true);
         return;
     }
@@ -1254,8 +1261,6 @@ function adjustTeamCalendarWeekendDisplay(events) {
     const view = teamCalendar.view;
     const startDate = view.currentStart;
     const endDate = view.currentEnd;
-    
-    console.log(`Team calendar checking date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
     
     // 주말(토요일=6, 일요일=0)에 이벤트가 있는지 확인
     let hasWeekendEvents = false;
@@ -1270,20 +1275,14 @@ function adjustTeamCalendarWeekendDisplay(events) {
                 // 현재 보이는 범위 내에 있는지 확인
                 if (eventDate >= startDate && eventDate < endDate) {
                     hasWeekendEvents = true;
-                    console.log(`Team calendar weekend event found: ${event.title} on ${eventDate.toDateString()}`);
                 }
             }
         }
     });
     
-    console.log(`Team calendar has weekend events: ${hasWeekendEvents}`);
-    
     // 주말 이벤트가 없으면 주말 숨김
     const shouldShowWeekends = hasWeekendEvents;
     teamCalendar.setOption('weekends', shouldShowWeekends);
-    
-    console.log(`Team calendar setting weekends visibility: ${shouldShowWeekends}`);
-    console.log('=== Team Calendar Weekend Display Adjustment Complete ===');
 }
 
 // 팀 캘린더 이벤트 드래그 앤 드롭 처리
@@ -1319,8 +1318,6 @@ async function handleTeamEventDrop(info) {
             end_time: newEndTime
         });
         
-        console.log('팀 캘린더 이벤트 드래그 완료:', { planId, newPlanDate, newStartTime, newEndTime });
-        
         // 팀 캘린더 새로고침
         teamCalendar.refetchEvents();
         
@@ -1349,8 +1346,6 @@ async function handleTeamEventResize(info) {
         await API.plans.update(planId, {
             end_time: newEndTime
         });
-        
-        console.log('팀 캘린더 이벤트 리사이즈 완료:', { planId, newEndTime });
         
         // 팀 캘린더 새로고침
         teamCalendar.refetchEvents();

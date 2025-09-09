@@ -6,16 +6,10 @@ let hideEmptyWeekends = true; // 빈 주말 자동 숨김 설정
 
 // 디버그 함수 - 브라우저 콘솔에서 debugCalendar() 호출 가능
 window.debugCalendar = function() {
-    console.log('=== CALENDAR DEBUG INFO ===');
-    console.log('Calendar exists:', !!calendar);
     if (calendar) {
-        console.log('Current view:', calendar.view.type);
-        console.log('Current events:', calendar.getEvents().length);
         calendar.getEvents().forEach(event => {
-            console.log(`  - ${event.id}: ${event.title} (${event.start} - ${event.end})`);
         });
     }
-    console.log('=== END DEBUG ===');
 };
 
 // 캘린더 초기화
@@ -94,25 +88,15 @@ function initializeCalendar() {
                 minute: clickedDateTime.getMinutes()
             } : null;
             
-            console.log('클릭 정보:', {
-                originalDateStr: info.dateStr,
-                safeDateStr: safeDateStr,
-                time: clickedTime,
-                view: calendar.view.type,
-                hasEvents: clickedEvents.length > 0,
-                clickedDateTime: clickedDateTime
-            });
             
             // 이벤트가 있는 날짜를 클릭했지만 이벤트 영역을 정확히 클릭하지 않은 경우
             // (즉, 빈 공간을 클릭한 경우) 새 계획 생성
             if (clickedEvents.length > 0) {
-                console.log('클릭한 날짜에 이벤트가 있습니다. 빈 공간 클릭 시에만 새 계획을 생성합니다.');
                 // 더블클릭 감지를 위한 타이머 설정 (빈 공간 클릭 시에만 새 계획 생성)
                 if (window.dateClickTimer) {
                     clearTimeout(window.dateClickTimer);
                     window.dateClickTimer = null;
                     // 더블클릭 - 새 일별 계획 생성 (기존 계획 무시)
-                    console.log('빈 공간 더블클릭 - 새 계획 생성');
                     handleDateDoubleClick(safeDateStr, true, clickedTime);
                 } else {
                     window.dateClickTimer = setTimeout(() => {
@@ -224,31 +208,21 @@ function initializeCalendar() {
         
         // 날짜 범위 변경 시 (네비게이션 포함) 주별/월별 계획 업데이트
         datesSet: function(info) {
-            console.log('=== DATES SET CALLBACK FIRED ===');
-            console.log('Date range:', info.start, 'to', info.end);
-            console.log('View type:', info.view.type);
             
             try {
                 // 항상 오늘을 기준으로 사용 (캘린더 보기와 관계없이)
                 const today = new Date();
                 const targetDate = today.toISOString().split('T')[0];
                 
-                console.log('📅 Always using today for weekly plans:', targetDate);
-                console.log('📅 Calendar view range:', new Date(info.start).toISOString().split('T')[0], 'to', new Date(info.end).toISOString().split('T')[0]);
                 
-                console.log('📅 Calling loadWeeklyMonthlyPlans with date:', targetDate);
                 loadWeeklyMonthlyPlans(targetDate);
             } catch (error) {
                 console.error('ERROR in datesSet callback:', error);
             }
-            console.log('=== DATES SET CALLBACK COMPLETE ===');
         },
         
         // 뷰 변경 시 이벤트 새로고침
         viewDidMount: function(info) {
-            console.log('=== VIEW CHANGED ===');
-            console.log('ViewDidMount arguments:', arguments);
-            console.log('ViewDidMount info object:', info);
             
             // info 객체 안에 view가 있는지 확인
             let view = null;
@@ -261,23 +235,17 @@ function initializeCalendar() {
                 view = calendar ? calendar.view : null;
             }
             
-            console.log('Detected view:', view);
-            console.log('View type:', view?.type || 'unknown');
-            console.log('Calendar exists:', !!calendar);
             
             if (!view || !view.type) {
-                console.log('ERROR: Could not determine view type!');
                 return;
             }
             
-            console.log(`Refetching events for view change to: ${view.type}`);
             // 뷰가 변경되면 이벤트를 다시 로드
             calendar.refetchEvents();
             
             // 시간 뷰로 변경되면 약간의 지연 후 시간 범위 조정
             if (view.type.includes('timeGrid')) {
                 setTimeout(() => {
-                    console.log('Time grid view detected, triggering time range adjustment...');
                     const events = calendar.getEvents();
                     if (events.length > 0) {
                         adjustTimeRange(events);
@@ -336,7 +304,6 @@ function initializeCalendar() {
             }
             
             if (dateStr) {
-                console.log('Date right-click detected:', dateStr, timeInfo);
                 showDateContextMenu(e, dateStr, timeInfo);
             }
         }
@@ -345,7 +312,6 @@ function initializeCalendar() {
     // 페이지 로드 시 현재 날짜의 주별/월별 계획 로드
     // datesSet 이벤트와 함께 명시적으로도 호출하여 확실하게 로드
     setTimeout(() => {
-        console.log('🚀 Explicit weekly/monthly plans load after calendar render');
         const today = new Date().toISOString().split('T')[0];
         loadWeeklyMonthlyPlans(today);
     }, 500);
@@ -372,9 +338,6 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
             filters = {};
         }
         
-        console.log('Loading calendar events for:', filters, '- Timestamp:', new Date().toISOString());
-        console.log('Current user:', Auth.currentUser);
-        console.log('Authentication status:', Auth.isLoggedIn());
         
         // 현재 뷰에 따른 사용자 필터링
         if (currentView === 'my') {
@@ -387,11 +350,8 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
         filters.type = 'daily';
         
         const result = await API.plans.getAll(filters);
-        console.log('API response:', result);
-        console.log('API plans data:', result.plans);
         
         if (result.success) {
-            console.log('Found plans:', result.plans.length);
             const events = [];
             
             result.plans.forEach(plan => {
@@ -404,7 +364,6 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                     console.warn('Calendar or view not available, using default dayGridMonth');
                 }
                 
-                console.log(`Processing plan ${plan.id} for view: ${currentView} (calendar exists: ${!!calendar})`);
                 
                 if (currentView === 'dayGridMonth') {
                     // 월별 뷰: 단일 이벤트 (시간 표시 없이 올데이 이벤트로)
@@ -457,9 +416,6 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                     
                 } else {
                     // 주별/일별 뷰: 듀얼 이벤트 (계획 + 실제) - 완료된 계획은 항상 듀얼 표시
-                    console.log(`Week/Day view: Creating events for plan ${plan.id} (${plan.title})`);
-                    console.log(`  - Status: ${plan.status}`);
-                    console.log(`  - Has actual times: ${!!(plan.actual_start_time && plan.actual_end_time)}`);
                     
                     // 1. 계획 시간 이벤트 (항상 표시)
                     let plannedStartDateTime, plannedEndDateTime;
@@ -484,7 +440,6 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                     let plannedTitle, plannedClasses;
                     if (plan.is_changed_task) {
                         // 변동업무는 실제 시간만 표시 (계획 시간 이벤트 생성 안함)
-                        console.log(`  -> Skipping planned event for changed task ${plan.id}`);
                         // 아래에서 실제 시간 이벤트만 생성
                     } else if (plan.status === 'cancelled') {
                         plannedTitle = plan.title; // ❌ 제거 - eventDidMount에서 처리
@@ -527,12 +482,10 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             classNames: plannedClasses
                         };
                         events.push(plannedEvent);
-                        console.log(`  -> Added planned event: planned-${plan.id}`);
                     }
                     
                     // 2. 실제 시간 이벤트 (있을 때만 표시)
                     if (plan.actual_start_time && plan.actual_end_time) {
-                        console.log(`  -> Creating actual event for completed plan...`);
                         let actualStartDateTime, actualEndDateTime;
                         
                         const [year, month, day] = plan.plan_date.split('-').map(Number);
@@ -572,18 +525,11 @@ async function loadCalendarEvents(fetchInfo, successCallback, failureCallback) {
                             classNames: actualClasses
                         };
                         events.push(actualEvent);
-                        console.log(`  -> Added actual event: actual-${plan.id}`);
                     } else {
-                        console.log(`  -> No actual times found, only showing planned event`);
                     }
                 }
-                
-                console.log(`Generated events for plan ${plan.id} in ${currentView}:`, events.filter(e => 
-                    e.id === plan.id || e.extendedProps?.originalId === plan.id
-                ));
             });
             
-            console.log('Sending events to calendar:', events);
             successCallback(events);
         } else {
             failureCallback(new Error('계획을 불러오는데 실패했습니다.'));
@@ -714,7 +660,6 @@ function getStatusClasses(status) {
 // 이벤트 드롭 처리
 async function handleEventDrop(info) {
     let planId = info.event.id;
-    const eventId = planId;
     let isActualEvent = false;
     
     // planned-xxx 또는 actual-xxx 형태의 ID에서 원본 ID 추출
@@ -739,8 +684,6 @@ async function handleEventDrop(info) {
                       String(endDate.getHours()).padStart(2, '0') + ':' + 
                       String(endDate.getMinutes()).padStart(2, '0') : null;
     
-    console.log(`Drag update - Event type: ${isActualEvent ? 'actual' : 'planned'}, ID: ${eventId} -> ${planId}`);
-    console.log(`New times: ${newDate} ${newStartTime} - ${newEndTime}`);
     
     try {
         let updateData = { plan_date: newDate };
@@ -772,7 +715,6 @@ async function handleEventDrop(info) {
 // 이벤트 리사이즈 처리
 async function handleEventResize(info) {
     let planId = info.event.id;
-    const eventId = planId;
     let isActualEvent = false;
     
     // planned-xxx 또는 actual-xxx 형태의 ID에서 원본 ID 추출
@@ -786,8 +728,6 @@ async function handleEventResize(info) {
                       String(endDate.getHours()).padStart(2, '0') + ':' + 
                       String(endDate.getMinutes()).padStart(2, '0') : null;
     
-    console.log(`Resize update - Event type: ${isActualEvent ? 'actual' : 'planned'}, ID: ${eventId} -> ${planId}`);
-    console.log(`New end time: ${newEndTime}`);
     
     try {
         let updateData = {};
@@ -902,10 +842,8 @@ function showDateContextMenu(event, dateStr, timeInfo) {
         const action = e.target.closest('.context-menu-item')?.getAttribute('data-action');
         
         if (action === 'new-plan') {
-            console.log('Creating new plan for date:', dateStr, 'with time:', timeInfo);
             openPlanModal(null, dateStr, timeInfo);
         } else if (action === 'add-changed-task') {
-            console.log('Creating changed task for date:', dateStr, 'with time:', timeInfo);
             openChangedTaskModal(dateStr, timeInfo);
         }
         
@@ -924,9 +862,8 @@ function showDateContextMenu(event, dateStr, timeInfo) {
 }
 
 // 주별 계획을 날짜 범위로 로드
-async function loadWeeklyPlanByRange(weekStart, weekEnd) {
+async function loadWeeklyPlanByRange(weekStart) {
     try {
-        console.log(`Looking for weekly plan with Monday date: ${weekStart}`);
         
         // 해당 주의 월요일 날짜로 주별 계획 조회
         const result = await API.plans.getAll({ 
@@ -934,17 +871,14 @@ async function loadWeeklyPlanByRange(weekStart, weekEnd) {
             date: weekStart
         });
         
-        console.log('Weekly plan API result:', result);
         
         if (result.success) {
             // 정확히 해당 주의 월요일 날짜와 일치하는 계획 찾기
             const filteredPlans = result.plans.filter(plan => {
                 const planDate = plan.plan_date;
-                console.log(`Checking plan date ${planDate} against week start ${weekStart}`);
                 return planDate === weekStart;
             });
             
-            console.log(`Found ${filteredPlans.length} weekly plans for ${weekStart}`);
             return { success: true, plans: filteredPlans };
         }
         
@@ -957,8 +891,6 @@ async function loadWeeklyPlanByRange(weekStart, weekEnd) {
 
 // 주별/월별 계획 로드 및 표시
 async function loadWeeklyMonthlyPlans(dateStr) {
-    console.log('🔍 ===== LOADING WEEKLY/MONTHLY PLANS =====');
-    console.log('🔍 Input date:', dateStr);
     
     const selectedDate = new Date(dateStr);
     const year = selectedDate.getFullYear();
@@ -985,33 +917,24 @@ async function loadWeeklyMonthlyPlans(dateStr) {
     weekEnd.setDate(mondayDate.getDate() + 6);
     const weekEndStr = weekEnd.toISOString().split('T')[0];
     
-    console.log(`🔍 Calculated week: ${weekStart} to ${weekEndStr}`);
-    console.log(`🔍 Calculated month: ${year}-${month.toString().padStart(2, '0')}`);
-    console.log(`🔍 Selected date day of week: ${dayOfWeek} (0=Sunday)`);
     
     try {
-        console.log('🔍 Starting API calls...');
         
         // 주별 계획 로드 - 해당 주 기간에 속하는 계획 찾기
-        const weeklyResult = await loadWeeklyPlanByRange(weekStart, weekEndStr);
-        console.log('🔍 Weekly result:', weeklyResult);
+        const weeklyResult = await loadWeeklyPlanByRange(weekStart);
         
         // 월별 계획 로드  
         const monthlyResult = await API.plans.getAll({
             type: 'monthly',
             date: `${year}-${month.toString().padStart(2, '0')}`
         });
-        console.log('🔍 Monthly result:', monthlyResult);
         
         // 주별 계획 표시
-        console.log('🔍 Displaying weekly plan...');
         displayWeeklyPlan(weeklyResult, weekStart, weekEndStr);
         
         // 월별 계획 표시
-        console.log('🔍 Displaying monthly plan...');
         displayMonthlyPlan(monthlyResult, year, month);
         
-        console.log('🔍 ===== WEEKLY/MONTHLY PLANS LOADING COMPLETE =====');
         
     } catch (error) {
         console.error('🔍 주별/월별 계획 로드 실패:', error);
@@ -1161,13 +1084,17 @@ function changeView(view) {
     // 캘린더 새로고침
     refreshCalendar();
     
-    // 팀원 필터 표시/숨김
+    // 팀원 필터 표시/숨김 (team-calendar.html 페이지에만 존재)
     const teamMemberFilter = document.getElementById('teamMemberFilter');
-    if (view === 'team' || view === 'all') {
-        teamMemberFilter.classList.remove('d-none');
-        loadTeamMembers();
-    } else {
-        teamMemberFilter.classList.add('d-none');
+    if (teamMemberFilter) {
+        if (view === 'team') {
+            teamMemberFilter.classList.remove('d-none');
+            if (typeof loadTeamMembers === 'function') {
+                loadTeamMembers();
+            }
+        } else {
+            teamMemberFilter.classList.add('d-none');
+        }
     }
 }
 
@@ -1205,31 +1132,23 @@ async function loadTeamMembers() {
 
 // 시간 범위 동적 조정
 function adjustTimeRange(events) {
-    console.log('=== Time Range Adjustment ===');
-    console.log('Current view:', calendar.view.type);
-    console.log('Total events received:', events.length);
     
     // 시간 뷰가 아니면 조정하지 않음
     const currentView = calendar.view.type;
     if (!currentView.includes('timeGrid')) {
-        console.log('Not a time grid view, skipping');
         return;
     }
     
     // 시간이 있는 이벤트만 필터링
     const timedEvents = events.filter(event => {
         const hasTimes = event.start && !event.allDay;
-        console.log(`Event "${event.title}": allDay=${event.allDay}, start=${event.start}, end=${event.end}, hasTimes=${hasTimes}`);
         if (hasTimes && event.start) {
-            console.log(`  -> Event start time: ${event.start.getHours()}:${event.start.getMinutes()}`);
         }
         return hasTimes;
     });
     
-    console.log('Filtered timed events:', timedEvents.length);
     
     if (timedEvents.length === 0) {
-        console.log('No timed events, using default range 07:00-21:00');
         calendar.setOption('slotMinTime', '07:00:00');
         calendar.setOption('slotMaxTime', '21:00:00');
         return;
@@ -1238,7 +1157,7 @@ function adjustTimeRange(events) {
     let earliestHour = 23;
     let latestHour = 0;
     
-    timedEvents.forEach((event, index) => {
+    timedEvents.forEach(event => {
         // FullCalendar Date 객체에서 시간 추출
         const startHour = event.start.getHours();
         let endHour = event.end ? event.end.getHours() : startHour;
@@ -1247,22 +1166,16 @@ function adjustTimeRange(events) {
         if (event.end && event.end.getDate() !== event.start.getDate()) {
             // 다음날로 넘어간 경우, 해당 날의 23:59까지만 고려
             endHour = 23;
-            console.log(`Event ${index} crosses midnight, adjusting end to 23:00`);
         }
         
-        console.log(`Event ${index} "${event.title}": ${startHour}:${event.start.getMinutes()} - ${endHour}:${event.end ? event.end.getMinutes() : 'N/A'}`);
-        console.log(`  Raw start:`, event.start);
-        console.log(`  Raw end:`, event.end);
         
         if (startHour < earliestHour) earliestHour = startHour;
         if (endHour > latestHour) latestHour = endHour;
     });
     
-    console.log(`Found hour range: ${earliestHour}:00 - ${latestHour}:00`);
     
     // 합리적인 시간 범위 보장
     if (earliestHour > latestHour) {
-        console.log('Invalid hour range detected, using default');
         earliestHour = 9;
         latestHour = 18;
     }
@@ -1275,49 +1188,38 @@ function adjustTimeRange(events) {
     const newMinTime = `${adjustedStartHour.toString().padStart(2, '0')}:00:00`;
     const newMaxTime = `${adjustedEndHour.toString().padStart(2, '0')}:00:00`;
     
-    console.log(`Setting time range: ${newMinTime} - ${newMaxTime}`);
     
     // Try setting options with a slight delay to ensure calendar is ready
     setTimeout(() => {
-        console.log('Applying time range options...');
         calendar.setOption('slotMinTime', newMinTime);
         calendar.setOption('slotMaxTime', newMaxTime);
         
         // Verify the options were set
-        console.log('Verification - slotMinTime:', calendar.getOption('slotMinTime'));
-        console.log('Verification - slotMaxTime:', calendar.getOption('slotMaxTime'));
         
         // Force calendar refresh
-        console.log('Forcing calendar refresh');
         calendar.render();
     }, 100);
     
-    console.log('=== Time Range Adjustment Complete ===');
 }
 
 // 주말 표시 조정 함수
 function adjustWeekendDisplay(events) {
-    console.log('=== Weekend Display Adjustment ===');
     
     if (!hideEmptyWeekends) {
-        console.log('Auto-hide weekends disabled, showing all days');
         calendar.setOption('weekends', true);
         return;
     }
     
     const currentViewType = calendar.view.type;
-    console.log('Current view type:', currentViewType);
     
     // 월별 뷰에서는 주말 숨김 적용하지 않음
     if (currentViewType === 'dayGridMonth') {
-        console.log('Month view detected, keeping weekends visible');
         calendar.setOption('weekends', true);
         return;
     }
     
     // 주별/일별 뷰에서만 적용
     if (!currentViewType.includes('timeGrid') && currentViewType !== 'listWeek') {
-        console.log('Not a week/day view, keeping weekends visible');
         calendar.setOption('weekends', true);
         return;
     }
@@ -1327,7 +1229,6 @@ function adjustWeekendDisplay(events) {
     const startDate = view.currentStart;
     const endDate = view.currentEnd;
     
-    console.log(`Checking date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
     
     // 주말(토요일=6, 일요일=0)에 이벤트가 있는지 확인
     let hasWeekendEvents = false;
@@ -1342,26 +1243,21 @@ function adjustWeekendDisplay(events) {
                 // 현재 보이는 범위 내에 있는지 확인
                 if (eventDate >= startDate && eventDate < endDate) {
                     hasWeekendEvents = true;
-                    console.log(`Weekend event found: ${event.title} on ${eventDate.toDateString()}`);
                 }
             }
         }
     });
     
-    console.log(`Has weekend events: ${hasWeekendEvents}`);
     
     // 주말 이벤트가 없으면 주말 숨김
     const shouldShowWeekends = hasWeekendEvents;
     calendar.setOption('weekends', shouldShowWeekends);
     
-    console.log(`Setting weekends visibility: ${shouldShowWeekends}`);
-    console.log('=== Weekend Display Adjustment Complete ===');
 }
 
 
 // 변동업무 모달 열기
 function openChangedTaskModal(dateStr, timeInfo = null) {
-    console.log('Opening changed task modal for date:', dateStr, 'timeInfo:', timeInfo);
     
     // 날짜 설정 (기본값을 클릭한 날짜로, 하지만 사용자가 변경 가능)
     document.getElementById('changedTaskDate').value = dateStr;
@@ -1478,7 +1374,6 @@ async function saveChangedTask() {
             action_content: document.getElementById('changedTaskActionContent').value || ''
         };
         
-        console.log('Saving changed task:', changedTaskData);
         
         // 1단계: 겹치는 계획 찾기 및 취소 처리
         const conflictingPlans = await findConflictingPlans(
@@ -1488,7 +1383,6 @@ async function saveChangedTask() {
         );
         
         if (conflictingPlans.length > 0) {
-            console.log('Found conflicting plans:', conflictingPlans);
             await cancelConflictingPlans(conflictingPlans);
         }
         
@@ -1563,7 +1457,6 @@ async function cancelConflictingPlans(conflictingPlans) {
     const cancelPromises = conflictingPlans.map(async (plan) => {
         try {
             await API.plans.update(plan.id, { status: 'cancelled' });
-            console.log(`Plan ${plan.id} (${plan.title}) cancelled due to changed task conflict`);
         } catch (error) {
             console.error(`Failed to cancel plan ${plan.id}:`, error);
         }
@@ -1578,11 +1471,9 @@ async function cancelConflictingPlans(conflictingPlans) {
 // 날짜 더블클릭 처리 (일별 계획 생성/편집)
 async function handleDateDoubleClick(dateStr, forceNew = false, timeInfo = null) {
     try {
-        console.log(`날짜 더블클릭: ${dateStr}, forceNew: ${forceNew}, timeInfo:`, timeInfo);
         
         if (forceNew) {
             // 강제로 새 계획 생성 (빈 공간 클릭 시)
-            console.log(`새 일별 계획 생성 (강제): ${dateStr}`);
             openPlanModal(null, dateStr, timeInfo);
             return;
         }
@@ -1596,11 +1487,9 @@ async function handleDateDoubleClick(dateStr, forceNew = false, timeInfo = null)
         if (result.success && result.plans.length > 0) {
             // 기존 계획이 있으면 첫 번째 계획 편집
             const existingPlan = result.plans[0];
-            console.log(`기존 일별 계획 편집: ${existingPlan.id}`);
             openPlanModal(existingPlan.id);
         } else {
             // 기존 계획이 없으면 새 일별 계획 생성
-            console.log(`새 일별 계획 생성: ${dateStr}`);
             openPlanModal(null, dateStr, timeInfo);
         }
     } catch (error) {

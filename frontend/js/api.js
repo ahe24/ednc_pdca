@@ -5,7 +5,6 @@ const API = {
         const host = window.location.hostname;
         const backendPort = window.CONFIG?.BACKEND_PORT || 3001;
         const url = `http://${host}:${backendPort}`;
-        console.log('API.js loaded - baseURL:', url);
         return url;
     })(),
     
@@ -21,11 +20,9 @@ const API = {
         };
 
         const fullUrl = this.baseURL + url;
-        console.log('API Request:', config.method || 'GET', fullUrl);
 
         try {
             const response = await fetch(fullUrl, config);
-            console.log('API Response:', response.status, response.statusText);
             
             if (!response.ok && response.status !== 401) {
                 console.error('API Error Response:', response);

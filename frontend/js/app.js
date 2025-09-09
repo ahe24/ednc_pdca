@@ -4,13 +4,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     try {
         await Auth.loadCurrentUser();
         if (Auth.isLoggedIn()) {
-            console.log('User authenticated, initializing app...');
             await initializeApp();
         } else {
-            console.log('User not authenticated');
         }
     } catch (error) {
-        console.log('Authentication failed, app not initialized');
     }
 });
 
@@ -31,7 +28,6 @@ async function initializeApp() {
     // URL 파라미터 처리 (검색에서 넘어온 경우)
     handleUrlParameters();
     
-    console.log('ED&C PDCA 앱이 초기화되었습니다.');
 }
 
 // URL 파라미터 처리
@@ -91,7 +87,6 @@ function setupEventListeners() {
     if (hideWeekendsCheckbox) {
         hideWeekendsCheckbox.addEventListener('change', function() {
             hideEmptyWeekends = this.checked;
-            console.log(`Weekend hiding setting changed: ${hideEmptyWeekends}`);
             // 캘린더 새로고침하여 설정 적용
             if (calendar) {
                 calendar.refetchEvents();
@@ -127,28 +122,20 @@ function setupEventListeners() {
     const editWeeklyPlanBtn = document.getElementById('editWeeklyPlanBtn');
     if (editWeeklyPlanBtn) {
         editWeeklyPlanBtn.addEventListener('click', () => {
-            console.log('주별 계획 편집 버튼 클릭됨');
             const planId = editWeeklyPlanBtn.getAttribute('data-plan-id');
             const weekStart = editWeeklyPlanBtn.getAttribute('data-week-start');
-            console.log('주별 계획 ID:', planId, '주 시작일:', weekStart);
             openWeeklyMonthlyPlanModal('weekly', planId, weekStart);
         });
-    } else {
-        console.error('editWeeklyPlanBtn 요소를 찾을 수 없습니다');
     }
 
     // 월별 계획 편집 버튼  
     const editMonthlyPlanBtn = document.getElementById('editMonthlyPlanBtn');
     if (editMonthlyPlanBtn) {
         editMonthlyPlanBtn.addEventListener('click', () => {
-            console.log('월별 계획 편집 버튼 클릭됨');
             const planId = editMonthlyPlanBtn.getAttribute('data-plan-id');
             const monthStart = editMonthlyPlanBtn.getAttribute('data-month-start');
-            console.log('월별 계획 ID:', planId, '월 시작일:', monthStart);
             openWeeklyMonthlyPlanModal('monthly', planId, monthStart);
         });
-    } else {
-        console.error('editMonthlyPlanBtn 요소를 찾을 수 없습니다');
     }
     
     // 외근 체크박스 변경시 위치 필드 활성화/비활성화
@@ -314,7 +301,6 @@ async function openPlanModal(planId = null, selectedDate = null, timeInfo = null
             document.getElementById('planDate').value = selectedDate;
             // 날짜가 선택된 경우 일별 계획으로 설정
             document.getElementById('planType').value = 'daily';
-            console.log(`날짜 필드 설정: ${selectedDate}`);
         }
         
         // 시간 정보가 있으면 시간 필드 설정 (week/day 뷰에서)
@@ -325,7 +311,6 @@ async function openPlanModal(planId = null, selectedDate = null, timeInfo = null
             const endHour = (timeInfo.hour + 1) % 24;
             const endTime = `${endHour.toString().padStart(2, '0')}:${timeInfo.minute.toString().padStart(2, '0')}`;
             
-            console.log(`시간 자동 설정: ${startTime} - ${endTime}`);
             
             // 시간 필드 설정 (resetPlanForm 이후에 설정)
             document.getElementById('startTime').value = startTime;
@@ -334,7 +319,6 @@ async function openPlanModal(planId = null, selectedDate = null, timeInfo = null
             // timeInfo가 있으면 날짜도 다시 한번 확실히 설정
             if (selectedDate) {
                 document.getElementById('planDate').value = selectedDate;
-                console.log(`시간 정보와 함께 날짜 재설정: ${selectedDate}`);
             }
         }
     }
@@ -544,7 +528,9 @@ async function savePlan() {
         
         // 모달 닫기 및 캘린더 새로고침
         bootstrap.Modal.getInstance(document.getElementById('planModal')).hide();
-        refreshCalendar();
+        if (typeof refreshCalendar === 'function') {
+            refreshCalendar();
+        }
         
         // 검색 캐시 새로고침
         if (typeof refreshSearchCache === 'function') {
@@ -585,7 +571,9 @@ async function deletePlan(planId) {
             modal.hide();
         }
         
-        refreshCalendar();
+        if (typeof refreshCalendar === 'function') {
+            refreshCalendar();
+        }
         
         // 검색 캐시 새로고침
         if (typeof refreshSearchCache === 'function') {
@@ -635,7 +623,9 @@ async function confirmCopy() {
         
         // 모달 닫기 및 캘린더 새로고침
         bootstrap.Modal.getInstance(document.getElementById('multiCopyModal')).hide();
-        refreshCalendar();
+        if (typeof refreshCalendar === 'function') {
+            refreshCalendar();
+        }
         
     } catch (error) {
         console.error('계획 복사 실패:', error);
@@ -750,7 +740,9 @@ async function saveWeeklyMonthlyPlan() {
             modal.hide();
             
             // 캘린더 새로고침
+            if (typeof refreshCalendar === 'function') {
             refreshCalendar();
+        }
             
             // 검색 캐시 새로고침
             if (typeof refreshSearchCache === 'function') {
@@ -799,7 +791,9 @@ async function deleteWeeklyMonthlyPlan() {
             modal.hide();
             
             // 캘린더 새로고침
+            if (typeof refreshCalendar === 'function') {
             refreshCalendar();
+        }
             
             // 검색 캐시 새로고침
             if (typeof refreshSearchCache === 'function') {
@@ -832,7 +826,11 @@ document.addEventListener('keydown', function(e) {
     // F5: 새로고침
     if (e.key === 'F5') {
         e.preventDefault();
-        refreshCalendar();
+        if (typeof refreshCalendar === 'function') {
+            if (typeof refreshCalendar === 'function') {
+            refreshCalendar();
+        }
+        }
     }
     
     // ESC: 모달 닫기
