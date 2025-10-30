@@ -484,24 +484,27 @@ function renderThisWeekTable() {
             // 실행 (Do)
             let doContent = plan.do_content || '-';
             const contentStyle = plan.status === 'cancelled' ? ' style="color: #6c757d; opacity: 0.7; text-decoration: line-through;"' : '';
+            const whiteSpaceStyle = ' style="white-space: pre-wrap;"'; // Preserve line breaks
             if (plan.location && plan.do_content) {
-                doContent = `<div class="content-highlight"${contentStyle}>${plan.do_content}<br><small class="text-muted"><i class="bi bi-geo-alt"></i> ${plan.location}</small></div>`;
+                doContent = `<div class="content-highlight"${contentStyle}${whiteSpaceStyle}>${plan.do_content}<br><small class="text-muted"><i class="bi bi-geo-alt"></i> ${plan.location}</small></div>`;
             } else if (plan.location && !plan.do_content) {
                 doContent = `<div class="cell-badge location-badge"${contentStyle}><i class="bi bi-geo-alt"></i> ${plan.location}</div>`;
             } else if (plan.do_content) {
-                doContent = `<div class="content-highlight"${contentStyle}>${plan.do_content}</div>`;
+                doContent = `<div class="content-highlight"${contentStyle}${whiteSpaceStyle}>${plan.do_content}</div>`;
             } else if (plan.status === 'cancelled') {
                 doContent = `<span${contentStyle}>-</span>`;
             }
             html += `<td>${doContent}</td>`;
-            
+
             // 점검 (Check)
             const checkContent = plan.check_content || '-';
-            html += `<td><span${contentStyle}>${checkContent}</span></td>`;
-            
+            const checkWhiteSpaceStyle = plan.check_content && plan.check_content !== '-' ? whiteSpaceStyle : '';
+            html += `<td><span${contentStyle}${checkWhiteSpaceStyle}>${checkContent}</span></td>`;
+
             // 개선 (Action)
             const actionContent = plan.action_content || '-';
-            html += `<td><span${contentStyle}>${actionContent}</span></td>`;
+            const actionWhiteSpaceStyle = plan.action_content && plan.action_content !== '-' ? whiteSpaceStyle : '';
+            html += `<td><span${contentStyle}${actionWhiteSpaceStyle}>${actionContent}</span></td>`;
             
             // 상태
             const statusText = getStatusText(plan.status);
